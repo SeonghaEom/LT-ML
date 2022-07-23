@@ -232,6 +232,8 @@ class TRANSFORMER_ML(nn.Module):
         self.gc2 = TransformerConv(2048, 256, heads=8)
         self.gc3 = TransformerConv(2048, 256, heads=8)
         self.gc4 = TransformerConv(2048, 256, heads=8)
+        self.gc5 = TransformerConv(2048, 256, heads=8)
+        self.gc6 = TransformerConv(2048, 256, heads=8)
         self.relu = nn.ReLU()
 
         _adj = _gen_A(num_classes, t, p, adj_file)
@@ -257,6 +259,8 @@ class TRANSFORMER_ML(nn.Module):
         x = self.gc2(x, adj)
         x = self.gc3(x, adj)
         x = self.gc4(x, adj)
+        x = self.gc5(x, adj)
+        x = self.gc6(x, adj)
         # x = self.relu(x)/
         # x = self.gc2(x, adj)
         # print(x.shape)
