@@ -229,7 +229,9 @@ class TRANSFORMER_ML(nn.Module):
         # self.gc1 = GraphConvolution(in_channel, 1024)
         # self.gc1 = SAGEConv(in_channel, 1024)
         self.gc1 = TransformerConv(in_channel, 256, heads=8)
-        # self.gc2 = TransformerConv(512, 1024, heads=1)
+        self.gc2 = TransformerConv(2048, 256, heads=8)
+        self.gc3 = TransformerConv(2048, 256, heads=8)
+        self.gc4 = TransformerConv(2048, 256, heads=8)
         self.relu = nn.ReLU()
 
         _adj = _gen_A(num_classes, t, p, adj_file)
@@ -251,7 +253,10 @@ class TRANSFORMER_ML(nn.Module):
         adj = adj.nonzero().t().contiguous()
         # print(adj)
         x = self.gc1(inp, adj)
-        print("x shape ", x.shape)
+        # print("x shape ", x.shape)
+        x = self.gc2(x, adj)
+        x = self.gc3(x, adj)
+        x = self.gc4(x, adj)
         # x = self.relu(x)/
         # x = self.gc2(x, adj)
         # print(x.shape)
