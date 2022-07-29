@@ -2,8 +2,10 @@ import argparse
 from engine import *
 from models import *
 from voc import *
-
+from config import *
+seed_everything(config.seed)
 import wandb
+
 
 
 parser = argparse.ArgumentParser(description='WILDCAT Training')
@@ -41,8 +43,13 @@ parser.add_argument('--inductive', action='store_true',
                     help='apply inductive learning method')
 parser.add_argument('--transformer', action='store_true',
                     help='apply transformer method')
+parser.add_argument('--base', action='store_true',
+                    help='apply base fc method')
+parser.add_argument('--transformer_encoder', action='store_true',
+                    help='apply transformer encoder'),
 parser.add_argument('--t', default=0.4, type=float)
 parser.add_argument('--p', default=0.25, type=float)
+parser.add_argument('--optim_config', default=[], type=int, nargs='+',)
 
 
 def main_voc2007():
@@ -60,20 +67,24 @@ def main_voc2007():
     num_classes = 20
 
     if len(args.wandb) :
-        wandb.init(project="ml-gcn", name="{}_tau{}_p{}".format(args.wandb, args.t, args.p))
+        wandb.init(project="ML-LT", name="{}".format(args.wandb))
 
     ## train for each tau
     # load model
     if args.inductive:
         model = sage_resnet101(num_classes=num_classes, t=args.t, p=args.p, pretrained=True, adj_file='data/voc/voc_adj.pkl')
     elif args.transformer:
-        model = trans_resnet101(num_classes=num_classes, t=args.t, p=args.p, pretrained=True, adj_file='data/voc/voc_adj.pkl')
-    else: model = gcn_resnet101(num_classes=num_classes, t=args.t, p=args.p, pretrained=True, adj_file='data/voc/voc_adj.pkl')
+        model = trans_resnet101(num_classes=num_classes, pretrained=True, adj_file='data/voc/voc_adj.pkl')
+    elif args.base:
+        model = base_resnet101(num_classes=num_classes, pretrained=True, adj_file='data/voc/voc_adj.pkl')
+    elif args.transformer_encoder:
+        model = trans_encoder_resnet101(num_classes=num_classes, pretrained=True, adj_file='data/voc/voc_adj.pkl')
+    else: model = gcn_resnet101(num_classes=num_classes, t=args.t, pretrained=True, adj_file='data/voc/voc_adj.pkl')
 
     # define loss function (criterion)
     criterion = nn.MultiLabelSoftMarginLoss()
     # define optimizer
-    optimizer = torch.optim.SGD(model.get_config_optim(args.lr, args.lrp),
+    optimizer = torch.optim.SGD([model.get_config_optim(args.lr, args.lrp)[i] for i in args.optim_config],
                                 lr=args.lr,
                                 momentum=args.momentum,
                                 weight_decay=args.weight_decay)
@@ -96,7 +107,9 @@ def main_voc2007():
     state['p'] = args.p
     state['tau'] = args.t
     engine = GCNMultiLabelMAPEngine(state)
-    engine.learning(model, criterion, train_dataset, val_dataset, optimizer)
+    best_score = engine.learning(model, criterion, train_dataset, val_dataset, optimizer)
+    if len(args.wandb):
+        wandb.log({"best_score": best_score })
 
 
 

@@ -51,8 +51,8 @@ def main_coco():
     global args, best_prec1, use_gpu
     args = parser.parse_args()
     print(args)
-    if not args.evaluate:
-        wandb.init(project="ml-gcn")
+    if len(args.wandb):
+        wandb.init(project="ml-gcn", name="{}".format(args.wandb))
 
     use_gpu = torch.cuda.is_available()
 
@@ -93,7 +93,9 @@ def main_coco():
     state['p'] = args.p
     state['tau'] = args.t
     engine = GCNMultiLabelMAPEngine(state)
-    engine.learning(model, criterion, train_dataset, val_dataset, optimizer)
+    best_score = engine.learning(model, criterion, train_dataset, val_dataset, optimizer)
+    if len(args.wandb):
+        wandb.log({"best_score": best_score })
 
 if __name__ == '__main__':
     main_coco()

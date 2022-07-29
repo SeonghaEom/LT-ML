@@ -130,6 +130,7 @@ class Engine(object):
                 self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
+            print(model.A)
             self.state['output'] = model(input_var)
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
@@ -315,7 +316,7 @@ class Engine(object):
         print('save model {filename}'.format(filename=filename))
         torch.save(state, filename)
         if is_best:
-            filename_best = '{}_p{}_tau{}_best.pth.tar'.format(self.state['model'], self.state['p'], self.state['tau'])
+            filename_best = '{}_best.pth.tar'.format(self.state['wandb'])
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
             shutil.copyfile(filename, filename_best)
@@ -379,7 +380,8 @@ class MultiLabelMAPEngine(Engine):
                       'CP_3: {CP:.4f}\t'
                       'CR_3: {CR:.4f}\t'
                       'CF1_3: {CF1:.4f}'.format(OP=OP_k, OR=OR_k, OF1=OF1_k, CP=CP_k, CR=CR_k, CF1=CF1_k))
-                # wandb.log({"loss": loss, "mAP": map, "OP": OP, "OR": OR, "OF1": OF1, "CP": CP, "CR": CR, "CF1": CF1})
+                if self.state['wandb']:
+                    wandb.log({"t_loss": loss, "t_mAP": map, "t_OP": OP, "t_OR": OR, "t_OF1": OF1, "t_CP": CP, "t_CR": CR, "t_CF1": CF1})
 
         return map
 
@@ -429,13 +431,6 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         target_var = torch.autograd.Variable(self.state['target']).float()
         inp_var = torch.autograd.Variable(self.state['input']).float().detach()  # one hot
         if not training:
-        #     feature_var.volatile = True
-        #     target_var.volatile = True
-        #     inp_var.volatile = True
-
-        # # compute output
-        # self.state['output'] = model(feature_var, inp_var)
-        # self.state['loss'] = criterion(self.state['output'], target_var)
             with torch.no_grad():
                 # compute output
                 self.state['output'] = model(feature_var, inp_var)
