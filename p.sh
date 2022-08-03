@@ -1,0 +1,10 @@
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.0 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.9 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.8 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.7 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.6 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.5 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.4 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.3 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.2 --epochs=50 --wandb=transformer6
+CUDA_VISIBLE_DEVICES=5 python3 demo_voc2007_gcn.py data/voc --image-size 448 --batch-size 32 --transformer --p=0.1 --epochs=50 --wandb=transformer6

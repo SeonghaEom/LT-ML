@@ -112,7 +112,7 @@ class Engine(object):
                     batch_time=batch_time, data_time_current=self.state['data_time_batch'],
                     data_time=data_time, loss_current=self.state['loss_batch'], loss=loss))
 
-    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True):
+    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None):
 
         input_var = torch.autograd.Variable(self.state['input'])
         target_var = torch.autograd.Variable(self.state['target'])
@@ -136,6 +136,7 @@ class Engine(object):
             optimizer.zero_grad()
             self.state['loss'].backward()
             optimizer.step()
+            scheduler.step()
 
     def init_learning(self, model, criterion):
 
@@ -158,9 +159,9 @@ class Engine(object):
                 normalize,
             ])
 
-        self.state['best_score'] = 0
+        self.state['best_score'] = {"mAP": 0, "OF1": 0, "CF1": 0}
 
-    def learning(self, model, criterion, train_dataset, val_dataset, optimizer=None):
+    def learning(self, model, criterion, train_dataset, val_dataset, optimizer=None, scheduler=None):
 
         self.init_learning(model, criterion)
 
@@ -206,23 +207,32 @@ class Engine(object):
 
         if self.state['evaluate']:
             self.validate(val_loader, model, criterion)
+            # test_loader = 
+            # self.validate(test_loader, model, criterion )
             return
 
         # TODO define optimizer
 
         for epoch in range(self.state['start_epoch'], self.state['max_epochs']):
             self.state['epoch'] = epoch
-            lr = self.adjust_learning_rate(optimizer)
-            print('lr:',lr)
+            # lr = self.adjust_learning_rate(optimizer)
+            # print('lr:',lr)
 
             # train for one epoch
-            self.train(train_loader, model, criterion, optimizer, epoch)
+            self.train(train_loader, model, criterion, optimizer, epoch, scheduler)
             # evaluate on validation set
-            prec1 = self.validate(val_loader, model, criterion)
+            score = self.validate(val_loader, model, criterion) #({"OF1": OF1, "CF1": CF1, "mAP": map})
+
+            if self.state['train_metric']['OF1'] >= self.state['val_metric']['OF1'] and \
+                self.state['train_metric']['CF1'] >= self.state['val_metric']['CF1'] and \
+                    self.state['train_metric']['mAP'] >= self.state['val_metric']['mAP']:
+                    if self.state['wandb']:
+                        wandb.log({"overfitting_epoch": epoch})
+                    return self.state['best_score']
 
             # remember best prec@1 and save checkpoint
-            is_best = prec1 > self.state['best_score']
-            self.state['best_score'] = max(prec1, self.state['best_score'])
+            is_best = score["mAP"] > self.state['best_score']["mAP"]
+            self.state['best_score']["mAP"] = max(score["mAP"], self.state['best_score']["mAP"])
             self.save_checkpoint({
                 'epoch': epoch + 1,
                 'arch': self._state('arch'),
@@ -230,10 +240,13 @@ class Engine(object):
                 'best_score': self.state['best_score'],
             }, is_best)
 
-            print(' *** best={best:.3f}'.format(best=self.state['best_score']))
+            self.state['best_score']["CF1"] = max(score["CF1"], self.state['best_score']["CF1"])
+            self.state['best_score']["OF1"] = max(score["OF1"], self.state['best_score']["OF1"])
+
+            print(' *** best={best:.3f}'.format(best=self.state['best_score']["mAP"]))
         return self.state['best_score']
 
-    def train(self, data_loader, model, criterion, optimizer, epoch):
+    def train(self, data_loader, model, criterion, optimizer, epoch, scheduler=None):
 
         # switch to train mode
         model.train()
@@ -258,7 +271,7 @@ class Engine(object):
             if self.state['use_gpu']:
                 self.state['target'] = self.state['target'].cuda(non_blocking=True)
 
-            self.on_forward(True, model, criterion, data_loader, optimizer)
+            self.on_forward(True, model, criterion, data_loader, optimizer, True, scheduler)
 
             # measure elapsed time
             self.state['batch_time_current'] = time.time() - end
@@ -305,27 +318,15 @@ class Engine(object):
 
         score = self.on_end_epoch(False, model, criterion, data_loader)
 
-        return score
+        return score #({"OF1": OF1, "CF1": CF1, "mAP": map})
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
-        if self._state('save_model_path') is not None:
-            filename_ = filename
-            filename = os.path.join(self.state['save_model_path'], filename_)
-            if not os.path.exists(self.state['save_model_path']):
-                os.makedirs(self.state['save_model_path'])
-        print('save model {filename}'.format(filename=filename))
-        torch.save(state, filename)
         if is_best:
             filename_best = '{}_best.pth.tar'.format(self.state['wandb'])
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
-            shutil.copyfile(filename, filename_best)
-            if self._state('save_model_path') is not None:
-                if self._state('filename_previous_best') is not None:
-                    os.remove(self._state('filename_previous_best'))
-                filename_best = os.path.join(self.state['save_model_path'], 'model_best_{score:.4f}.pth.tar'.format(score=state['best_score']))
-                shutil.copyfile(filename, filename_best)
-                self.state['filename_previous_best'] = filename_best
+            # shutil.copyfile(filename, filename_best)
+            torch.save(state, filename_best)
 
     def adjust_learning_rate(self, optimizer):
         """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
@@ -366,6 +367,7 @@ class MultiLabelMAPEngine(Engine):
                       'CF1: {CF1:.4f}'.format(OP=OP, OR=OR, OF1=OF1, CP=CP, CR=CR, CF1=CF1))
                 if self.state['wandb']:
                     wandb.log({"loss": loss, "mAP": map, "OP": OP, "OR": OR, "OF1": OF1, "CP": CP, "CR": CR, "CF1": CF1})
+                self.state['train_metric'] = ({"OF1": OF1, "CF1": CF1, "mAP": map})
             else:
                 print('Test: \t Loss {loss:.4f}\t mAP {map:.3f}'.format(loss=loss, map=map))
                 print('OP: {OP:.4f}\t'
@@ -382,8 +384,9 @@ class MultiLabelMAPEngine(Engine):
                       'CF1_3: {CF1:.4f}'.format(OP=OP_k, OR=OR_k, OF1=OF1_k, CP=CP_k, CR=CR_k, CF1=CF1_k))
                 if self.state['wandb']:
                     wandb.log({"t_loss": loss, "t_mAP": map, "t_OP": OP, "t_OR": OR, "t_OF1": OF1, "t_CP": CP, "t_CR": CR, "t_CF1": CF1})
+                self.state['val_metric'] = ({"OF1": OF1, "CF1": CF1, "mAP": map})
 
-        return map
+        return {"OF1": OF1, "CF1": CF1, "mAP": map}
 
     def on_start_batch(self, training, model, criterion, data_loader, optimizer=None, display=True):
 
@@ -426,7 +429,7 @@ class MultiLabelMAPEngine(Engine):
 
 
 class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
-    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True):
+    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None):
         feature_var = torch.autograd.Variable(self.state['feature']).float()
         target_var = torch.autograd.Variable(self.state['target']).float()
         inp_var = torch.autograd.Variable(self.state['input']).float().detach()  # one hot
@@ -444,6 +447,8 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
             self.state['loss'].backward()
             nn.utils.clip_grad_norm(model.parameters(), max_norm=1.0)
             optimizer.step()
+            if scheduler:
+                scheduler.step()
 
 
     def on_start_batch(self, training, model, criterion, data_loader, optimizer=None, display=True):

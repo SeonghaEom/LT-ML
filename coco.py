@@ -99,12 +99,13 @@ def categoty_to_idx(category):
 
 
 class COCO2014(data.Dataset):
-    def __init__(self, root, transform=None, phase='train', inp_name=None):
+    def __init__(self, root, transform=None, phase='train', inp_name=None, LT=False):
         self.root = root
         self.phase = phase
         self.img_list = []
         self.transform = transform
         download_coco2014(root, phase)
+        self.LT = LT
         self.get_anno()
         self.num_classes = len(self.cat2idx)
 
@@ -113,7 +114,9 @@ class COCO2014(data.Dataset):
         self.inp_name = inp_name
 
     def get_anno(self):
-        list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
+        if self.LT:
+            list_path = os.path.join(self.root, 'data', '{}_anno_LT.json'.format(self.phase))
+        else: list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
         self.img_list = json.load(open(list_path, 'r'))
         self.cat2idx = json.load(open(os.path.join(self.root, 'data', 'category.json'), 'r'))
 

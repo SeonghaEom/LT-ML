@@ -5,7 +5,9 @@ from util import _gen_A
 import torch
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, TransformerConv
-
+import timm
+from timm.data import resolve_data_config
+from timm.data.transforms_factory import create_transform
 
 
 class GraphConvolution(nn.Module):
@@ -90,9 +92,16 @@ class GCNResnet(nn.Module):
 
     def get_config_optim(self, lr, lrp):
         return [
-                # {'params': self.features.parameters(), 'lr': lr * lrp},
-                {'params': self.gc1.parameters(), 'lr': lr},
-                {'params': self.gc2.parameters(), 'lr': lr},
+                {'params': self.features[0].parameters(), 'lr': lr * lrp},#0
+                {'params': self.features[1].parameters(), 'lr': lr * lrp},#1
+                {'params': self.features[2].parameters(), 'lr': lr * lrp},#2
+                {'params': self.features[3].parameters(), 'lr': lr * lrp},#3
+                {'params': self.features[4].parameters(), 'lr': lr * 0.01},#4
+                {'params': self.features[5].parameters(), 'lr': lr * 0.025},#5
+                {'params': self.features[6].parameters(), 'lr': lr * 0.05},#6
+                {'params': self.features[7].parameters(), 'lr': lr * 0.1},#7
+                {'params': self.gc1.parameters(), 'lr': lr}, #8
+                {'params': self.gc2.parameters(), 'lr': lr}, #9
                 ]
 
 class SAGEResnet(nn.Module):
@@ -246,7 +255,7 @@ class TRANSFORMER_ML(nn.Module):
         # self.linear = nn.Linear(300, 2048, bias=False)
         # self.te2 = nn.TransformerEncoderLayer(2048, nhead=8, dim_feedforward=2048, norm_first=True)
 
-        _adj, nums = _gen_A(num_classes, t, p, adj_file)
+        _adj, nums = _gen_A(num_classes, 0, 0, adj_file)
         self.A = Parameter(torch.from_numpy(_adj).float())
         self.nums = Parameter(torch.from_numpy(nums).float())
         # image normalization
@@ -270,6 +279,7 @@ class TRANSFORMER_ML(nn.Module):
         adj = self.A.long()
         adj = adj.nonzero().t().contiguous()
         x, (E, alpha) = self.tc1(inp, adj, return_attention_weights=True)
+        # print(x.shape)
         x = x.transpose(0, 1)
         x = torch.matmul(feature, x) #32x2048, 2048x20
         # print(x.shape)
@@ -327,12 +337,97 @@ class BaseResnet(nn.Module):
 
     def get_config_optim(self, lr, lrp):
         return [
-                {'params': self.features.parameters(), 'lr': lr * lrp },
-                {'params': self.features[-2].parameters(), 'lr': lr * lrp},
-                {'params': self.fc.parameters(), 'lr': lr},
+                {'params': self.features[0].parameters(), 'lr': lr * lrp},#0
+                {'params': self.features[1].parameters(), 'lr': lr * lrp},#1
+                {'params': self.features[2].parameters(), 'lr': lr * lrp},#2
+                {'params': self.features[3].parameters(), 'lr': lr * lrp},#3
+                {'params': self.features[4].parameters(), 'lr': lr * 0.01},#4
+                {'params': self.features[5].parameters(), 'lr': lr * 0.025},#5
+                {'params': self.features[6].parameters(), 'lr': lr * 0.05},#6
+                {'params': self.features[7].parameters(), 'lr': lr * 0.1},#7
+                {'params': self.fc.parameters(), 'lr': lr},#8
                 ]
 
-def base_resnet101(num_classes, pretrained=False, adj_file=None, in_channel=300):
+class BaseResnet10t(nn.Module):
+    def __init__(self, model, num_classes):
+        super(BaseResnet10t, self).__init__()
+        # for name, child in model.named_children():
+        #     print(name)
+        self.features = nn.Sequential(
+            model.conv1,
+            model.bn1,
+            model.act1,
+            model.maxpool,
+            model.layer1,
+            model.layer2,
+            model.layer3,
+            model.layer4,
+            model.global_pool,
+        )
+        self.num_classes = num_classes
+        # self.pooling = nn.MaxPool2d(14, 14)
+        self.fc = nn.Linear(model.fc.in_features, num_classes)
+        # self.layer_norm = nn.LayerNorm(normalized_shape=(num_classes,in_channel), eps=1e-5)
+        # image normalization
+        self.image_normalization_mean = [0.485, 0.456, 0.406]
+        self.image_normalization_std = [0.229, 0.224, 0.225]
+        self.sigm = nn.Sigmoid()
+
+    def forward(self, feature, inp):
+        # print(feature.shape, inp[0].shape, inp[0].shape)
+        feature = self.features(feature)
+        # feature = self.pooling(feature)
+        # feature = feature.view(feature.size(0), -1)
+        x = torch.flatten(feature, 1)
+        x = self.fc(x)
+        # x = self.sigm(x)
+        return x
+
+    def get_config_optim(self, lr, lrp):
+        return [
+                {'params': self.features[0].parameters(), 'lr': lr * lrp},#0
+                {'params': self.features[1].parameters(), 'lr': lr * lrp},#1
+                {'params': self.features[2].parameters(), 'lr': lr * lrp},#2
+                {'params': self.features[3].parameters(), 'lr': lr * lrp},#3
+                {'params': self.features[4].parameters(), 'lr': lr * 0.01},#4
+                {'params': self.features[5].parameters(), 'lr': lr * 0.025},#5
+                {'params': self.features[6].parameters(), 'lr': lr * 0.05},#6
+                {'params': self.features[7].parameters(), 'lr': lr * 0.1},#7
+                {'params': self.fc.parameters(), 'lr': lr},#8
+                ]
+
+
+def base_vit(num_classes, pretrained=True):
+    model = timm.create_model('vit_base_patch16_224', pretrained=pretrained)
+    # model.reset_classifier(0)
+
+    config = resolve_data_config({}, model=model)
+    transform = create_transform(**config)
+    return model
+def base_resnet10(num_classes, pretrained=False):
+    # model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=0)
+    model = timm.create_model('resnet10t', pretrained=True)
+    config = resolve_data_config({}, model=model)
+    transform = create_transform(**config)
+    return BaseResnet10t(model, num_classes)
+
+def base_resnet18(num_classes, pretrained=True):
+    model = models.resnet18(pretrained=pretrained)
+    return BaseResnet(model, num_classes)
+
+def base_resnet34(num_classes, pretrained=True):
+    model = models.resnet34(pretrained=pretrained)
+    return BaseResnet(model, num_classes)
+
+def base_resnet50(num_classes, pretrained=True):
+    model = models.resnet50(pretrained=pretrained)
+    return BaseResnet(model, num_classes)
+
+def base_resnet152(num_classes, pretrained=True):
+    model = models.resnet152(pretrained=pretrained)
+    return BaseResnet(model, num_classes)
+
+def base_resnet101(num_classes, pretrained=True):
     model = models.resnet101(pretrained=pretrained)
     return BaseResnet(model, num_classes)
 
