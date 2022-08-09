@@ -42,13 +42,6 @@ class Engine(object):
         if self._state('epoch_step') is None:
             self.state['epoch_step'] = []
 
-        if self.state['transformer']:
-            self.state['model'] = "transformer"
-        elif self.state['inductive']:
-            self.state['model'] = "sage"
-        else:
-            self.state['model'] = "gcn"
-
         # meters
         self.state['meter_loss'] = tnt.meter.AverageValueMeter()
         # time measure
@@ -145,7 +138,7 @@ class Engine(object):
                                              std=model.image_normalization_std)
             self.state['train_transform'] = transforms.Compose([
                 MultiScaleCrop(self.state['image_size'], scales=(1.0, 0.875, 0.75, 0.66, 0.5), max_distort=2),
-                transforms.RandomHorizontalFlip(),
+                # transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,
             ])
@@ -223,13 +216,6 @@ class Engine(object):
             # evaluate on validation set
             score = self.validate(val_loader, model, criterion) #({"OF1": OF1, "CF1": CF1, "mAP": map})
 
-            if self.state['train_metric']['OF1'] >= self.state['val_metric']['OF1'] and \
-                self.state['train_metric']['CF1'] >= self.state['val_metric']['CF1'] and \
-                    self.state['train_metric']['mAP'] >= self.state['val_metric']['mAP']:
-                    if self.state['wandb']:
-                        wandb.log({"overfitting_epoch": epoch})
-                    return self.state['best_score']
-
             # remember best prec@1 and save checkpoint
             is_best = score["mAP"] > self.state['best_score']["mAP"]
             self.state['best_score']["mAP"] = max(score["mAP"], self.state['best_score']["mAP"])
@@ -250,6 +236,10 @@ class Engine(object):
 
         # switch to train mode
         model.train()
+        # print(model.module.__class__.__name__ )
+        # if model.module.__class__.__name__ == 'MHA' and epoch==5:
+        #     model.module.weight_share()
+            
 
         self.on_start_epoch(True, model, criterion, data_loader, optimizer)
 
@@ -322,7 +312,7 @@ class Engine(object):
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         if is_best:
-            filename_best = '{}_best.pth.tar'.format(self.state['wandb'])
+            filename_best = '{}_LT({})_{}_{}_{}_{}_best.pth.tar'.format(self.state['dataset'], self.state['LT'], self.state['name'], self.state['wandb'],self.state['model'], self.state['finetune'])
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
             # shutil.copyfile(filename, filename_best)
@@ -440,7 +430,6 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
                 self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
-            
             self.state['output'] = model(feature_var, inp_var)
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
