@@ -44,6 +44,8 @@ parser.add_argument('--wandb', default='', type=str,
                     help='logging with title at wandb')
 parser.add_argument('--seed', default=42, type=int, 
                     help='seed everything'),
+parser.add_argument('--loss', default='softmargin', type=str, 
+                    help='loss'),
 
 parser.add_argument('--dataset', default='voc', type=str)
 parser.add_argument('--model', default='', type=str,
@@ -110,7 +112,10 @@ def main():
     model = finetune_clf(model, args.finetune, num_classes=num_classes, num_block=args.num_block, num_head = args.num_head, adj_file=adj_file)
 
     # define loss function (criterion)
-    criterion = nn.MultiLabelSoftMarginLoss()
+    if args.loss == "softmargin":
+        criterion = nn.MultiLabelSoftMarginLoss()
+    elif args.loss =="mse":
+        criterion = nn.MSELoss()
     # define optimizer
     print(len(model.get_config_optim(args.lr, args.lrp)[args.optim_config:]))
     optimizer = torch.optim.SGD(model.get_config_optim(args.lr, args.lrp)[args.optim_config:],

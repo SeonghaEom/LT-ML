@@ -6,7 +6,7 @@ from util import *
 from util import _gen_A
 import torch
 import torch.nn as nn
-from torch_geometric.nn import SAGEConv, TransformerConv
+from torch_geometric.nn import SAGEConv, GATv2Conv, TransformerConv, GATConv
 import timm
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
@@ -72,20 +72,23 @@ class GraphConvolution(nn.Module):
         return self.__class__.__name__ + ' (' \
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
-
-
-class GCN_clf(nn.Module):
-    def __init__(self, model, num_classes, in_channel=300, t=0.4, adj_file=None):
-        super(GCN_clf, self).__init__()
+class GAT_clf(nn.Module):
+    def __init__(self, model, num_classes, in_channel=300, adj_file=None):
+        super(GAT_clf, self).__init__()
         self.model_name = model.__class__.__name__
         self.features = model.features
         self.num_classes = num_classes
 
-        self.gc1 = GraphConvolution(in_channel, model.fc.in_features)
-        self.gc2 = GraphConvolution(model.fc.in_features, model.fc.in_features)
+        heads = int(model.fc.in_features / 256)
+        self.gc1 = GATv2Conv(model.fc.in_features, model.fc.in_features, 1,add_self_loops=False, concat=False)
+        self.gc2 = GATv2Conv(model.fc.in_features, model.fc.in_features, 1,add_self_loops=False, concat=False)
+        # self.fc = nn.Linear(model.fc.in_features, num_classes)
         self.relu = nn.LeakyReLU(0.2)
 
-        _adj = gen_A(num_classes, adj_file, t)
+        np.random.seed(0)
+        ran=np.random.rand(num_classes, model.fc.in_features)
+        self.inp = Parameter(torch.from_numpy(ran).float())
+        _adj = _gen_A(num_classes, adj_file, None)
         self.A = Parameter(torch.from_numpy(_adj).float())
         # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
@@ -96,10 +99,58 @@ class GCN_clf(nn.Module):
         # feature = self.pooling(feature)
         feature = feature.view(feature.size(0), -1)
 
+        # inp = inp[0]
+        adj = gen_adj(self.A)
+        adj = adj.nonzero().t().contiguous()
+        # print(self.inp.device, adj.device)
+        x = self.gc1(self.inp, adj)
+        x = self.relu(x)
+        x = self.gc2(x, adj)
 
-        inp = inp[0]
-        adj = gen_adj(self.A).detach()
-        x = self.gc1(inp, adj)
+        x = x.transpose(0, 1)
+        x = torch.matmul(feature, x)
+        return x
+
+    def get_config_optim(self, lr, lrp):
+        clf_optim = [
+                {'params': self.gc1.parameters(), 'lr': lr}, #8
+                {'params': self.gc2.parameters(), 'lr': lr}, #9
+                # {'params': self.inp, 'lr': lr}, #9
+                ]
+        if self.model_name =="BaseViT":
+            return get_vit_optim_config(self.features, lr,lrp) + clf_optim
+        else:
+            return get_resnet_optim_config(self.features, lr, lrp ) + clf_optim
+
+class GCN_clf(nn.Module):
+    def __init__(self, model, num_classes, in_channel=300, t=0.4, adj_file=None):
+        super(GCN_clf, self).__init__()
+        self.model_name = model.__class__.__name__
+        self.features = model.features
+        self.num_classes = num_classes
+
+        self.gc1 = GraphConvolution(model.fc.in_features, model.fc.in_features)
+        self.gc2 = GraphConvolution(model.fc.in_features, model.fc.in_features)
+        self.relu = nn.LeakyReLU(0.2)
+
+        np.random.seed(0)
+        ran=np.random.rand(num_classes, model.fc.in_features)
+        self.inp = Parameter(torch.from_numpy(ran).float())
+        _adj = _gen_A(num_classes, adj_file, None)
+        self.A = Parameter(torch.from_numpy(_adj).float())
+        # image normalization
+        self.image_normalization_mean = [0.485, 0.456, 0.406]
+        self.image_normalization_std = [0.229, 0.224, 0.225]
+
+    def forward(self, feature, inp):
+        feature = self.features(feature)
+        # feature = self.pooling(feature)
+        feature = feature.view(feature.size(0), -1)
+
+        # inp = inp[0]
+        adj = gen_adj(self.A)
+        # print(self.inp.device, adj.device)
+        x = self.gc1(self.inp, adj)
         x = self.relu(x)
         x = self.gc2(x, adj)
 
@@ -247,11 +298,15 @@ class TRANSCONV_clf(nn.Module):
         self.num_classes = num_classes
 
         heads = int(model.fc.in_features / 256)
-        self.tc1 = TransformerConv(model.fc.in_features, 256, heads)
+        self.tc1 = TransformerConv(model.fc.in_features, model.fc.in_features, 1)
+        self.tc2 = TransformerConv(model.fc.in_features, model.fc.in_features, 1)
         # self.tc2 = TransformerConv(model.fc.in_features, 256, heads=heads)
-        self.linear1 = nn.Linear(256*heads, num_classes, bias=False)
+        # self.linear1 = nn.Linear(model.fc.in_features, model.fc.in_features, bias=False)
 
-        _adj= _gen_A(num_classes, adj_file)
+        np.random.seed(0)
+        ran=np.random.rand(num_classes, model.fc.in_features)
+        self.inp = Parameter(torch.from_numpy(ran).float())
+        _adj= gen_A(num_classes, adj_file)
         self.A = Parameter(torch.from_numpy(_adj).float())
         # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
@@ -264,18 +319,19 @@ class TRANSCONV_clf(nn.Module):
         # inp = inp[0]
         adj = gen_adj(self.A).detach().long()
         adj = adj.nonzero().t().contiguous()
-        x, (E, alpha) = self.tc1(feature, adj, return_attention_weights=True)
-        # x, (E, alpha) = self.tc2(x, adj, return_attention_weights=True)
-        x = self.linear1(x)
-        # x = x.transpose(0, 1)
-        # x = torch.matmul(feature, x) #32x2048, 2048x20
+        x, (E, alpha) = self.tc1(self.inp, adj, return_attention_weights=True)
+        x, (E, alpha) = self.tc2(x, adj, return_attention_weights=True)
+        # x = self.linear1(x)
+        x = x.transpose(0, 1)
+        x = torch.matmul(feature, x) #32x2048, 2048x20
         # print(x.shape)
         return x
 
     def get_config_optim(self, lr, lrp):
         clf_optim = [
                     {'params': self.tc1.parameters(), 'lr': lr},#8
-                    {'params': self.linear1.parameters(), 'lr': lr},#9
+                    {'params': self.tc2.parameters(), 'lr': lr},#8
+                    # {'params': self.linear1.parameters(), 'lr': lr},#9
                     ]
         if self.model_name == "BaseViT":
             return get_vit_optim_config(self.features, lr,lrp) +clf_optim
@@ -543,6 +599,8 @@ def finetune_clf(model, finetune, num_classes, num_block, num_head, adj_file=Non
         return GCN_clf(model, num_classes, in_channel=300, t=0.4, adj_file=adj_file)
     elif finetune=="sage":
         return SAGE_clf(model, num_classes, in_channel=300, t=0.4, adj_file=adj_file)
+    elif finetune=="gat":
+        return GAT_clf(model, num_classes, in_channel=300, adj_file=adj_file)
     elif finetune=="sa":
         return TRANSCONV_clf(model, num_classes, in_channel=300, adj_file=adj_file)
     elif finetune=="transformer_encoder":
