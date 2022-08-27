@@ -116,6 +116,8 @@ class COCO2014(data.Dataset):
     def get_anno(self):
         if self.LT:
             list_path = os.path.join(self.root, 'data', '{}_anno_LT.json'.format(self.phase))
+        if self.phase == 'trainval':
+            list_path = os.path.join(self.root, 'data', '{}_anno_3.json'.format(self.phase))
         else: list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
         self.img_list = json.load(open(list_path, 'r'))
         self.cat2idx = json.load(open(os.path.join(self.root, 'data', 'category.json'), 'r'))
