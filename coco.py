@@ -99,23 +99,24 @@ def categoty_to_idx(category):
 
 
 class COCO2014(data.Dataset):
-    def __init__(self, root, transform=None, phase='train', inp_name=None, LT=False):
+    def __init__(self, root, transform=None, phase='train', inp_name=None, label_count=None):
         self.root = root
         self.phase = phase
         self.img_list = []
         self.transform = transform
         download_coco2014(root, phase)
-        self.LT = LT
+        self.lab_cnt = label_count
         self.get_anno()
         self.num_classes = len(self.cat2idx)
+        
 
         with open(inp_name, 'rb') as f:
             self.inp = pickle.load(f)
         self.inp_name = inp_name
 
     def get_anno(self):
-        if self.LT:
-            list_path = os.path.join(self.root, 'data', '{}_anno_LT.json'.format(self.phase))
+        if self.lab_cnt:
+            list_path = os.path.join(self.root, 'data', 'coco{}_anno_{}.json'.format(self.phase, self.lab_cnt))
         else: list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
         self.img_list = json.load(open(list_path, 'r'))
         self.cat2idx = json.load(open(os.path.join(self.root, 'data', 'category.json'), 'r'))

@@ -476,7 +476,7 @@ class BaseResnet(nn.Module):
         return x
 
     def get_config_optim(self, lr, lrp):
-        return get_resnet_optim_config(self.features, lr,lrp) +[
+        return [
                 {'params': self.fc.parameters(), 'lr': lr},#8
                 ]
 
@@ -553,17 +553,59 @@ class BaseViT(nn.Module):
         x = self.fc(x)
         return x
     def get_config_optim(self, lr, lrp):
-        return get_vit_optim_config(self.features, lr, lrp) + [
-                {'params': self.fc.parameters(), 'lr': lr},#12
+        return [
+                {'params': self.fc.parameters(), 'lr': lr}
                 ]
 
-def base_vit(num_classes, pretrained=True):
-    # model = timm.create_model('vit_base_patch16_224', pretrained=pretrained)
-    model = timm.create_model('vit_base_patch16_224_dino', num_classes=num_classes, pretrained=pretrained)
-    # model.reset_classifier(0)
+class BaseSwin(nn.Module):
+    def __init__(self, model, num_classes):
+        super(BaseSwin, self).__init__()
 
-    # config = resolve_data_config({}, model=model)
-    # transform = create_transform(**config)
+        self.features = nn.Sequential(
+            model.patch_embed,
+            model.pos_drop,
+            model.layers,
+            Reduce('b n e -> b e', reduction='mean'),
+            nn.LayerNorm(model.head.in_features),
+            # model.norm,
+            # model.fc_norm,
+        )
+        self.fc = nn.Linear(model.head.in_features, num_classes)
+        # image normalization
+        self.image_normalization_mean = [0.485, 0.456, 0.406]
+        self.image_normalization_std = [0.229, 0.224, 0.225]
+
+    def forward(self, feature, inp):
+        print(feature.shape)
+        x = self.features(feature)
+        x = self.fc(x)
+        # print(x.shape)
+        return x
+    def get_config_optim(self, lr, lrp):
+        return [
+                {'params': self.fc.parameters(), 'lr': lr}
+                ]
+
+def base_swin(num_classes, image_size, pretrained=True, version2=False):
+    # model = timm.create_model('vit_base_patch16_224', pretrained=pretrained)
+    m_path = 'swin_s3_base_224'
+    if version2:
+      m_path = 'swinv2_base_window12_192_22k'
+    model = timm.create_model(m_path, num_classes=num_classes, pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
+        # print(p.requires_grad)
+    return BaseSwin(model, num_classes)
+def base_vit(num_classes, image_size, pretrained=True):
+    # model = timm.create_model('vit_base_patch16_224', pretrained=pretrained)
+    m_path = 'vit_base_patch16_{}'.format(image_size)
+
+    model = timm.create_model(m_path, num_classes=num_classes, pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
+        # print(p.requires_grad)
     return BaseViT(model, num_classes)
 def base_resnet10(num_classes, pretrained=False):
     # model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=0)
@@ -574,22 +616,37 @@ def base_resnet10(num_classes, pretrained=False):
 
 def base_resnet18(num_classes, pretrained=True):
     model = models.resnet18(pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
     return BaseResnet(model, num_classes)
 
 def base_resnet34(num_classes, pretrained=True):
     model = models.resnet34(pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
     return BaseResnet(model, num_classes)
 
 def base_resnet50(num_classes, pretrained=True):
     model = models.resnet50(pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
     return BaseResnet(model, num_classes)
 
 def base_resnet152(num_classes, pretrained=True):
     model = models.resnet152(pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
     return BaseResnet(model, num_classes)
 
 def base_resnet101(num_classes, pretrained=True):
     model = models.resnet101(pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
     return BaseResnet(model, num_classes)
 
 def finetune_clf(model, finetune, num_classes, num_block, num_head, adj_file=None):

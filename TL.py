@@ -60,8 +60,8 @@ parser.add_argument('--num_head', default=4, type=int,
 parser.add_argument('--t', default=0.4, type=float)
 parser.add_argument('--p', default=0.25, type=float)
 parser.add_argument('--optim_config', default=4, type=int)
-parser.add_argument('--LT', action='store_true',
-                    help='longtail dataset')
+parser.add_argument('--label_count', default=1, type=int,
+                    help='only get data that contains this number of labels')
 
 def main():
     global args, best_prec1, use_gpu
@@ -75,19 +75,19 @@ def main():
 
     # define dataset
     if args.dataset=='voc':
-        train_dataset = Voc2007Classification(args.data, 'trainval', inp_name='data/voc/voc_glove_word2vec.pkl', LT=args.LT)
+        train_dataset = Voc2007Classification(args.data, 'trainval', inp_name='data/voc/voc_glove_word2vec.pkl')
         val_dataset = Voc2007Classification(args.data, 'test', inp_name='data/voc/voc_glove_word2vec.pkl')
         num_classes = 20
     elif args.dataset=='coco':
-        train_dataset = COCO2014(args.data, phase='train', inp_name='data/coco/coco_glove_word2vec.pkl', LT=args.LT)
+        train_dataset = COCO2014(args.data, phase='train', inp_name='data/coco/coco_glove_word2vec.pkl', label_count=args.label_count)
         val_dataset = COCO2014(args.data, phase='val', inp_name='data/coco/coco_glove_word2vec.pkl')
         num_classes = 80
 
     if len(args.wandb) :
         if args.finetune=='transformer_encoder':
-            wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.LT, args.model), name="{}-{}-{}-{}-{}".format(args.wandb, args.finetune, args.num_block, args.num_head, args.seed))
+            wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}-{}-{}".format(args.wandb, args.finetune, args.num_block, args.num_head, args.seed))
         else:
-            wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.LT, args.model), name="{}-{}-{}".format(args.wandb, args.finetune, args.seed))
+            wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}".format(args.wandb, args.finetune, args.seed))
 
     #exp1 model variants
     if args.model == 'resnet10':
@@ -103,12 +103,14 @@ def main():
     elif args.model == 'resnet152':
         model = base_resnet152(num_classes=num_classes, pretrained=True)
     elif args.model == 'vit':
-        model = base_vit(num_classes=num_classes, pretrained=True)
+        model = base_vit(num_classes=num_classes, image_size=args.image_size, pretrained=True)
+    elif args.model == 'swin':
+        model = base_swin(num_classes=num_classes, image_size=args.image_size, pretrained=True)
+    elif args.model == 'swin2':
+        model = base_swin(num_classes=num_classes, image_size=args.image_size, pretrained=True, version2=True)
 
     # exp2 load model
-    if args.LT:
-        adj_file = '{}_lt_adj.pkl'.format(args.dataset)
-    else: adj_file = 'data/{}/{}_adj.pkl'.format(args.dataset, args.dataset)
+    adj_file = 'data/{}/{}_adj.pkl'.format(args.dataset, args.dataset)
     model = finetune_clf(model, args.finetune, num_classes=num_classes, num_block=args.num_block, num_head = args.num_head, adj_file=adj_file)
 
     # define loss function (criterion)
@@ -125,7 +127,7 @@ def main():
     scheduler = None
 
     if args.model=='vit':
-        args.image_size = 224
+        args.image_size = 384
     state = {'batch_size': args.batch_size, 'image_size': args.image_size, 'max_epochs': args.epochs,
             'evaluate': args.evaluate, 'resume': args.resume, 'num_classes':num_classes}
     state['difficult_examples'] = True
@@ -147,7 +149,7 @@ def main():
     state['finetune'] = args.finetune
     state['model'] = args.model
     state['dataset'] = args.dataset
-    state['LT'] = args.LT
+    state['label_count'] = args.label_count
     engine = GCNMultiLabelMAPEngine(state)
     best_score = engine.learning(model, criterion, train_dataset, val_dataset, optimizer, scheduler)
     if len(args.wandb):
