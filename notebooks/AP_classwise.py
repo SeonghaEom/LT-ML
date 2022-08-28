@@ -9,7 +9,7 @@ import numpy as np
 import os
 import sys
 sys.path.append('../')
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+# os.environ["CUDA_VISIBLE_DEVICES"]="5"
 import torchvision
 from voc import *
 from coco import *
@@ -84,7 +84,7 @@ test_dataset.transform = transforms.Compose([
                 normalize,
             ])
 
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=4096)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=256)
 from util import AveragePrecisionMeter
 AP = AveragePrecisionMeter(difficult_examples=False)
 
@@ -118,24 +118,24 @@ def sort_by_class_size(ap_li):
   return Sorted_Ap
 
 name_map = {0: "resnet50", 1: "vit", 2: "swin"}
-
-model = get_model(2)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = get_model(1).to(device)
+model = model.eval()
 for i, (input, target) in tqdm(enumerate(test_loader)):
   img, path, inp = input
   target[target == 0] = 1
   target[target == -1] = 0
-  feat_Var = torch.autograd.Variable(img).float().detach()
+  feat_Var = torch.autograd.Variable(img).float().to(device)
   
   # output = model(feat_Var, None).detach()
   output = model(feat_Var, None).detach()
   # print(output.requires_grad, target.requires_grad)
   AP.add(output, target)
 map = 100 * AP.value().mean()
+print(100 * AP.value())
 ap_li = 100 * AP.value()
 
-print("ap_li: ", ap_li)
 
-
-with open("AP_{}_fc.txt".format(name_map[2]), "w") as f:
+with open("AP_{}_fc.txt".format(name_map[1]), "w") as f:
   f.write (str(sort_by_class_size(ap_li)))
 

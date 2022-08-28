@@ -11,6 +11,7 @@ import torch.nn as nn
 from util import *
 import wandb
 
+torch.cuda.empty_cache()
 tqdm.monitor_interval = 0
 class Engine(object):
     def __init__(self, state={}):
