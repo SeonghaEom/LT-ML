@@ -1,0 +1,387 @@
+ResNetV2(
+  (stem): Sequential(
+    (conv): StdConv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    (pad): ConstantPad2d(padding=(1, 1, 1, 1), value=0.0)
+    (pool): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)
+  )
+  (stages): Sequential(
+    (0): ResNetStage(
+      (blocks): Sequential(
+        (0): PreActBottleneck(
+          (downsample): DownsampleConv(
+            (conv): StdConv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (norm): Identity()
+          )
+          (norm1): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (1): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (2): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 64, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+      )
+    )
+    (1): ResNetStage(
+      (blocks): Sequential(
+        (0): PreActBottleneck(
+          (downsample): DownsampleConv(
+            (conv): StdConv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+            (norm): Identity()
+          )
+          (norm1): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (1): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (2): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (3): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 128, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+      )
+    )
+    (2): ResNetStage(
+      (blocks): Sequential(
+        (0): PreActBottleneck(
+          (downsample): DownsampleConv(
+            (conv): StdConv2d(512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False)
+            (norm): Identity()
+          )
+          (norm1): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (1): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 1024, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (2): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 1024, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (3): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 1024, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (4): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 1024, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (5): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 1024, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 256, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+      )
+    )
+    (3): ResNetStage(
+      (blocks): Sequential(
+        (0): PreActBottleneck(
+          (downsample): DownsampleConv(
+            (conv): StdConv2d(1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False)
+            (norm): Identity()
+          )
+          (norm1): GroupNormAct(
+            32, 1024, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (1): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 2048, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+        (2): PreActBottleneck(
+          (norm1): GroupNormAct(
+            32, 2048, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv1): StdConv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (norm2): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv2): StdConv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+          (norm3): GroupNormAct(
+            32, 512, eps=1e-05, affine=True
+            (drop): Identity()
+            (act): ReLU(inplace=True)
+          )
+          (conv3): StdConv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (drop_path): Identity()
+        )
+      )
+    )
+  )
+  (norm): GroupNormAct(
+    32, 2048, eps=1e-05, affine=True
+    (drop): Identity()
+    (act): ReLU(inplace=True)
+  )
+  (head): ClassifierHead(
+    (global_pool): SelectAdaptivePool2d (pool_type=avg, flatten=Identity())
+    (fc): Conv2d(2048, 80, kernel_size=(1, 1), stride=(1, 1))
+    (flatten): Flatten(start_dim=1, end_dim=-1)
+  )
+)
