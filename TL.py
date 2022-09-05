@@ -6,6 +6,7 @@ from coco import *
 from config import *
 # seed_everything(config.seed)
 import wandb
+from backbones.config import config
 
 
 
@@ -90,6 +91,8 @@ def main():
             wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}".format(args.wandb, args.finetune, args.seed))
 
     #exp1 model variants
+    m_path = config[args.model]
+    print("model path: {}".format(m_path))
     if args.model == 'resnet10':
         model = base_resnet10(num_classes=num_classes, pretrained=True)
     elif args.model == 'resnet18':
@@ -97,17 +100,21 @@ def main():
     elif args.model == 'resnet34':
         model = base_resnet34(num_classes=num_classes, pretrained=True)
     elif args.model == 'resnet50':
-        model = base_resnet50(num_classes=num_classes, pretrained=True)
+        model = base_resnet50(model_path = m_path, num_classes=num_classes, pretrained=True)
     elif args.model == 'resnet101':
         model = base_resnet101(num_classes=num_classes, pretrained=True)
     elif args.model == 'resnet152':
         model = base_resnet152(num_classes=num_classes, pretrained=True)
     elif args.model == 'vit':
-        model = base_vit(num_classes=num_classes, image_size=args.image_size, pretrained=True)
+        model = base_vit(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True)
     elif args.model == 'swin':
-        model = base_swin(num_classes=num_classes, image_size=args.image_size, pretrained=True)
-    elif args.model == 'swin2':
-        model = base_swin(num_classes=num_classes, image_size=args.image_size, pretrained=True, version2=True)
+        model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True)
+    elif args.model == 'convnext':
+        model = base_convnext(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True)
+    elif args.model == 'mlpmixer':
+        model = base_mlpmixer(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True)
+    # elif args.model == 'vit-hybrid':
+    #     model = base_vit_hybrid(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True)
 
     # exp2 load model
     adj_file = 'data/{}/{}_adj.pkl'.format(args.dataset, args.dataset)
@@ -126,8 +133,6 @@ def main():
                                 weight_decay=args.weight_decay)
     scheduler = None
 
-    if args.model=='vit':
-        args.image_size = 384
     state = {'batch_size': args.batch_size, 'image_size': args.image_size, 'max_epochs': args.epochs,
             'evaluate': args.evaluate, 'resume': args.resume, 'num_classes':num_classes}
     state['difficult_examples'] = True

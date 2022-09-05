@@ -441,7 +441,38 @@ class SE(nn.Module):
             return get_vit_optim_config(self.features, lr,lrp) +clf_optim
         else:
             return get_resnet_optim_config(self.features, lr, lrp) + clf_optim
+class BaseResnetV2(nn.Module):
+    def __init__(self, model, num_classes):
+        super(BaseResnetV2, self).__init__()
+        self.features = nn.Sequential(
+            model.stem,
+            model.stages,
+            model.norm,
+        )
+        model.head.fc.out_features = num_classes
+        for p in model.head.fc.parameters():
+          if p.requires_grad == False:
+            p.requires_grad = True
+        self.head = model.head
+        self.num_classes = num_classes
 
+        self.image_normalization_mean = [0.485, 0.456, 0.406]
+        self.image_normalization_std = [0.229, 0.224, 0.225]
+
+    def forward(self, feature, inp):
+        # print(feature.shape, inp[0].shape, inp[0].shape)
+        feature = self.features(feature)
+        # feature = self.pooling(feature)
+        # feature = feature.view(feature.size(0), -1)
+        # x = torch.flatten(feature, 1)
+        x = self.head(feature)
+        # x = self.sigm(x)
+        return x
+
+    def get_config_optim(self, lr, lrp):
+        return [
+                {'params': self.head.fc.parameters(), 'lr': lr},#8
+                ]
 class BaseResnet(nn.Module):
     def __init__(self, model, num_classes):
         super(BaseResnet, self).__init__()
@@ -576,7 +607,7 @@ class BaseSwin(nn.Module):
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
     def forward(self, feature, inp):
-        print(feature.shape)
+        # print(feature.shape)
         x = self.features(feature)
         x = self.fc(x)
         # print(x.shape)
@@ -585,23 +616,85 @@ class BaseSwin(nn.Module):
         return [
                 {'params': self.fc.parameters(), 'lr': lr}
                 ]
+class BaseMlpMixer(nn.Module):
+    def __init__(self, model, num_classes):
+        super(BaseMlpMixer, self).__init__()
 
-def base_swin(num_classes, image_size, pretrained=True, version2=False):
-    # model = timm.create_model('vit_base_patch16_224', pretrained=pretrained)
-    m_path = 'swin_s3_base_224'
-    if version2:
-      m_path = 'swinv2_base_window12_192_22k'
-    model = timm.create_model(m_path, num_classes=num_classes, pretrained=pretrained)
+        self.features = nn.Sequential(
+            model.stem,
+            model.blocks,
+            Reduce('b n e -> b e', reduction='mean'),
+            nn.LayerNorm(model.head.in_features),
+            # model.norm,
+            # model.fc_norm,
+        )
+        self.fc = nn.Linear(model.head.in_features, num_classes)
+        # image normalization
+        self.image_normalization_mean = [0.485, 0.456, 0.406]
+        self.image_normalization_std = [0.229, 0.224, 0.225]
+
+    def forward(self, feature, inp):
+        # print(feature.shape)
+        x = self.features(feature)
+        x = self.fc(x)
+        # print(x.shape)
+        return x
+    def get_config_optim(self, lr, lrp):
+        return [
+                {'params': self.fc.parameters(), 'lr': lr}
+                ]
+class BaseConvNext(nn.Module):
+    def __init__(self, model, num_classes):
+        super(BaseConvNext, self).__init__()
+
+        self.features = nn.Sequential(
+            model.stem,
+            model.stages,
+            model.norm_pre,
+        )
+        in_features = model.head[-1].in_features
+        model.head[-1] = nn.Linear(in_features, num_classes)
+        self.fc = model.head
+        # self.fc = nn.Linear(model.head.in_features, num_classes)
+        # image normalization
+        self.image_normalization_mean = [0.485, 0.456, 0.406]
+        self.image_normalization_std = [0.229, 0.224, 0.225]
+
+    def forward(self, feature, inp):
+        # print(feature.shape)
+        x = self.features(feature)
+
+        x = self.fc(x)
+        # print(x.shape)
+        return x
+    def get_config_optim(self, lr, lrp):
+        return [
+                {'params': self.fc.parameters(), 'lr': lr}
+                ]
+
+def base_mlpmixer(model_path, num_classes, image_size, pretrained=True):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
+        # print(p.requires_grad)
+    return BaseMlpMixer(model, num_classes)
+def base_convnext(model_path, num_classes, image_size, pretrained=True):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
+        # print(p.requires_grad)
+    return BaseConvNext(model, num_classes)
+def base_swin(model_path, num_classes, image_size, pretrained=True):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
         # print(p.requires_grad)
     return BaseSwin(model, num_classes)
-def base_vit(num_classes, image_size, pretrained=True):
-    # model = timm.create_model('vit_base_patch16_224', pretrained=pretrained)
-    m_path = 'vit_base_patch16_{}'.format(image_size)
-
-    model = timm.create_model(m_path, num_classes=num_classes, pretrained=pretrained)
+def base_vit(model_path, num_classes, image_size, pretrained=True):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
@@ -628,12 +721,12 @@ def base_resnet34(num_classes, pretrained=True):
         p.requires_grad=False
     return BaseResnet(model, num_classes)
 
-def base_resnet50(num_classes, pretrained=True):
-    model = models.resnet50(pretrained=pretrained)
+def base_resnet50(model_path, num_classes, pretrained=True):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
-    return BaseResnet(model, num_classes)
+    return BaseResnetV2(model, num_classes)
 
 def base_resnet152(num_classes, pretrained=True):
     model = models.resnet152(pretrained=pretrained)

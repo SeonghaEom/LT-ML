@@ -1,0 +1,670 @@
+VisionTransformer(
+  (patch_embed): HybridEmbed(
+    (backbone): ResNetV2(
+      (stem): Sequential(
+        (conv): StdConv2dSame(3, 64, kernel_size=(7, 7), stride=(2, 2), bias=False)
+        (norm): GroupNormAct(
+          32, 64, eps=1e-05, affine=True
+          (drop): Identity()
+          (act): ReLU(inplace=True)
+        )
+        (pool): MaxPool2dSame(kernel_size=(3, 3), stride=(2, 2), padding=(0, 0), dilation=(1, 1), ceil_mode=False)
+      )
+      (stages): Sequential(
+        (0): ResNetStage(
+          (blocks): Sequential(
+            (0): Bottleneck(
+              (downsample): DownsampleConv(
+                (conv): StdConv2dSame(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+                (norm): GroupNormAct(
+                  32, 256, eps=1e-05, affine=True
+                  (drop): Identity()
+                  (act): Identity()
+                )
+              )
+              (conv1): StdConv2dSame(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 64, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 64, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (1): Bottleneck(
+              (conv1): StdConv2dSame(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 64, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 64, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (2): Bottleneck(
+              (conv1): StdConv2dSame(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 64, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 64, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+          )
+        )
+        (1): ResNetStage(
+          (blocks): Sequential(
+            (0): Bottleneck(
+              (downsample): DownsampleConv(
+                (conv): StdConv2dSame(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                (norm): GroupNormAct(
+                  32, 512, eps=1e-05, affine=True
+                  (drop): Identity()
+                  (act): Identity()
+                )
+              )
+              (conv1): StdConv2dSame(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(128, 128, kernel_size=(3, 3), stride=(2, 2), bias=False)
+              (norm2): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 512, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (1): Bottleneck(
+              (conv1): StdConv2dSame(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 512, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (2): Bottleneck(
+              (conv1): StdConv2dSame(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 512, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (3): Bottleneck(
+              (conv1): StdConv2dSame(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 128, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 512, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+          )
+        )
+        (2): ResNetStage(
+          (blocks): Sequential(
+            (0): Bottleneck(
+              (downsample): DownsampleConv(
+                (conv): StdConv2dSame(512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False)
+                (norm): GroupNormAct(
+                  32, 1024, eps=1e-05, affine=True
+                  (drop): Identity()
+                  (act): Identity()
+                )
+              )
+              (conv1): StdConv2dSame(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(2, 2), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (1): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (2): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (3): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (4): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (5): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (6): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (7): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+            (8): Bottleneck(
+              (conv1): StdConv2dSame(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm1): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv2): StdConv2dSame(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+              (norm2): GroupNormAct(
+                32, 256, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): ReLU(inplace=True)
+              )
+              (conv3): StdConv2dSame(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (norm3): GroupNormAct(
+                32, 1024, eps=1e-05, affine=True
+                (drop): Identity()
+                (act): Identity()
+              )
+              (drop_path): Identity()
+              (act3): ReLU(inplace=True)
+            )
+          )
+        )
+      )
+      (norm): Identity()
+      (head): ClassifierHead(
+        (global_pool): SelectAdaptivePool2d (pool_type=, flatten=Identity())
+        (fc): Identity()
+        (flatten): Identity()
+      )
+    )
+    (proj): Conv2d(1024, 768, kernel_size=(1, 1), stride=(1, 1))
+  )
+  (pos_drop): Dropout(p=0.0, inplace=False)
+  (blocks): Sequential(
+    (0): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (1): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (2): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (3): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (4): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (5): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (6): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (7): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (8): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (9): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (10): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+    (11): Block(
+      (norm1): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (attn): Attention(
+        (qkv): Linear(in_features=768, out_features=2304, bias=True)
+        (attn_drop): Dropout(p=0.0, inplace=False)
+        (proj): Linear(in_features=768, out_features=768, bias=True)
+        (proj_drop): Dropout(p=0.0, inplace=False)
+      )
+      (ls1): Identity()
+      (drop_path1): Identity()
+      (norm2): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+      (mlp): Mlp(
+        (fc1): Linear(in_features=768, out_features=3072, bias=True)
+        (act): GELU()
+        (drop1): Dropout(p=0.0, inplace=False)
+        (fc2): Linear(in_features=3072, out_features=768, bias=True)
+        (drop2): Dropout(p=0.0, inplace=False)
+      )
+      (ls2): Identity()
+      (drop_path2): Identity()
+    )
+  )
+  (norm): LayerNorm((768,), eps=1e-06, elementwise_affine=True)
+  (fc_norm): Identity()
+  (head): Linear(in_features=768, out_features=80, bias=True)
+)
