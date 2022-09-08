@@ -459,7 +459,7 @@ class BaseResnetV2(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-    def forward(self, feature, inp):
+    def forward(self, feature):
         # print(feature.shape, inp[0].shape, inp[0].shape)
         feature = self.features(feature)
         # feature = self.pooling(feature)
@@ -490,8 +490,6 @@ class BaseResnet(nn.Module):
         self.num_classes = num_classes
         # self.pooling = nn.MaxPool2d(14, 14)
         self.fc = nn.Linear(model.fc.in_features, num_classes)
-        # self.layer_norm = nn.LayerNorm(normalized_shape=(num_classes,in_channel), eps=1e-5)
-        # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
         self.sigm = nn.Sigmoid()
@@ -633,7 +631,7 @@ class BaseMlpMixer(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-    def forward(self, feature, inp):
+    def forward(self, feature,):
         # print(feature.shape)
         x = self.features(feature)
         x = self.fc(x)
