@@ -418,7 +418,7 @@ class SE(nn.Module):
 
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
-    def forward(self, feature, inp):
+    def forward(self, feature, inp=None):
         feature = self.features(feature)
         # feature = feature.view(feature.size(0), -1)
         # print(feature.shape)
@@ -459,7 +459,7 @@ class BaseResnetV2(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-    def forward(self, feature, inp):
+    def forward(self, feature, inp=None):
         # print(feature.shape, inp[0].shape, inp[0].shape)
         feature = self.features(feature)
         # feature = self.pooling(feature)
@@ -606,7 +606,7 @@ class BaseSwin(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-    def forward(self, feature, inp):
+    def forward(self, feature, inp=None):
         # print(feature.shape)
         x = self.features(feature)
         x = self.fc(x)
@@ -686,11 +686,12 @@ def base_convnext(model_path, num_classes, image_size, pretrained=True):
         p.requires_grad=False
         # print(p.requires_grad)
     return BaseConvNext(model, num_classes)
-def base_swin(model_path, num_classes, image_size, pretrained=True):
+def base_swin(model_path, num_classes, image_size, pretrained=True, requires_grad=False):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
-    for n, p in model.named_parameters():
-      if p.requires_grad:
-        p.requires_grad=False
+    if not requires_grad:
+      for n, p in model.named_parameters():
+        if p.requires_grad:
+          p.requires_grad=False
         # print(p.requires_grad)
     return BaseSwin(model, num_classes)
 def base_vit(model_path, num_classes, image_size, pretrained=True):
