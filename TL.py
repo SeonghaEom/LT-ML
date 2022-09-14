@@ -10,6 +10,9 @@ from backbones.config import config
 from torchvision.transforms import RandAugment
 from PIL import ImageDraw
 from torch.optim import lr_scheduler
+import gc
+
+gc.collect()
 
 class CutoutPIL(object):
     def __init__(self, cutout_factor=0.5):
@@ -105,7 +108,7 @@ def main():
 
     resume = True if len(args.resume) else False
     if len(args.wandb) :
-        wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}".format(args.wandb, args.finetune, args.seed), entity='seonghaeom', resume=resume)
+        wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}".format(args.wandb, args.finetune, args.seed), entity='seonghaeom')
 
 
 

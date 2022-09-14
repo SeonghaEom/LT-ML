@@ -61,6 +61,7 @@ class InterSwin(nn.Module):
             model.layers[3],
             Reduce('b n e -> b e', reduction='mean'),
             nn.LayerNorm(model.head.in_features),
+            # model.norm,
         ]
         self.inter = nn.Sequential(*li[:where+3])
         self.features = nn.Sequential(*li[where+3:])
@@ -78,6 +79,8 @@ class InterSwin(nn.Module):
         b, n, h = out.shape
         print( n, h)
         self.avg = nn.AvgPool1d(n*h - model.head.in_features +1, stride=1)
+        del(inp)
+        del(out)
 
 
     def forward(self, feature,):
@@ -91,6 +94,7 @@ class InterSwin(nn.Module):
         return out_logit
     def get_config_optim(self, lr, lrp):
         return [
+                {'params': self.features[-1].parameters(), 'lr': lr},
                 {'params': self.fc.parameters(), 'lr': lr},
                 {'params': self.scale, 'lr': lr},
                 ]

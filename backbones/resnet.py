@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATv2Conv, TransformerConv, GATConv
 import timm
+from timm.models.layers.norm_act import GroupNormAct
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from einops.layers.torch import Rearrange, Reduce
@@ -61,7 +62,10 @@ class BaseResnetV2(nn.Module):
 class InterResnetV2(nn.Module):
     def __init__(self, model, image_size=224, num_classes=80, where =0):
         super(InterResnetV2, self).__init__()
-        li = [model.stem, model.stages[0], model.stages[1], model.stages[2], model.stages[3], model.norm, model.head.global_pool]
+        li = [model.stem, model.stages[0], model.stages[1], model.stages[2], model.stages[3], 
+        model.norm, 
+        # GroupNormAct(2048, 32, eps=1e-05, affine=True),
+        model.head.global_pool]
         self.intermediate = nn.Sequential(*li[:where+2])
         self.features = nn.Sequential(*li[where+2:])
         model.head.fc.out_features = num_classes
@@ -84,7 +88,11 @@ class InterResnetV2(nn.Module):
         _, n, h, w = out.shape
         _, self.n_, self.h_, self.w_ = self.features(out).shape
         # print(self.features(out).shape)
-        self.avg = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
+        # self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
+        self.pool = nn.Conv2d(n, self.n_, (h-self.h_+1, w-self.w_+1), stride=(1,1))
+        del(inp)
+        del(out)
+
 
 
     def forward(self, feature):
@@ -93,10 +101,12 @@ class InterResnetV2(nn.Module):
         out = self.features(intermediate_cp)
 
 
-        b = intermediate_repr.shape[0]
-        intermediate_repr = intermediate_repr.reshape((b, -1))
-        inter_out = self.avg(intermediate_repr)
-        inter_out = inter_out.reshape((b, self.n_, self.h_, self.w_))
+        # b = intermediate_repr.shape[0]
+        # intermediate_repr = intermediate_repr.reshape((b, -1))
+        # inter_out = self.pool(intermediate_repr)
+        # inter_out = inter_out.reshape((b, self.n_, self.h_, self.w_))
+
+        inter_out = self.pool(intermediate_repr)
         # print(out.shape, inter_out.shape)
         out = out*(1-self.scale) + self.scale*inter_out
         
@@ -109,6 +119,8 @@ class InterResnetV2(nn.Module):
 
     def get_config_optim(self, lr, lrp):
         return [
+              # {'params': self.features[-2].parameters(), 'lr': lr},
+              {'params': self.pool.parameters(), 'lr': lr},
               {'params': self.fc.parameters(), 'lr': lr},
               {'params': self.scale, 'lr': lr}
               ]
