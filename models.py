@@ -1,15 +1,23 @@
 from collections import namedtuple
+
+from certifi import where
 import torchvision.models as models
 from torchvision.ops import SqueezeExcitation
 from torch.nn import Parameter
 from util import *
 from util import _gen_A
+from backbones.vit import BaseViT, InterViT
+from backbones.resnet import BaseResnetV2, BaseResnet, BaseResnet10t, InterResnetV2, InterResnet
+from backbones.swin import BaseSwin, InterSwin
+from backbones.mlpmixer import BaseMlpMixer, InterMlpMixer
+from backbones.convnext import BaseConvNext, InterConvNext
 import torch
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATv2Conv, TransformerConv, GATConv
 import timm
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
+
 
 def get_resnet_optim_config(model, lr, lrp):
     return [
@@ -441,266 +449,75 @@ class SE(nn.Module):
             return get_vit_optim_config(self.features, lr,lrp) +clf_optim
         else:
             return get_resnet_optim_config(self.features, lr, lrp) + clf_optim
-class BaseResnetV2(nn.Module):
+
+class TD_clf(nn.Module):
     def __init__(self, model, num_classes):
-        super(BaseResnetV2, self).__init__()
-        self.features = nn.Sequential(
-            model.stem,
-            model.stages,
-            model.norm,
-        )
-        model.head.fc.out_features = num_classes
-        for p in model.head.fc.parameters():
-          if p.requires_grad == False:
-            p.requires_grad = True
-        self.head = model.head
-        self.num_classes = num_classes
+        super(TD_clf, self).__init__()
+
+        self.backbone = model.features[:]
+        self.num_classes= num_classes
+
+        self.avg1d = nn.AvgPool1d(196, stride=1)
+        self.avg1d_ = nn.AvgPool1d(768-79, stride=1)
+        self.intermediate = model.intermediate
+        self.clf = nn.TransformerDecoderLayer(d_model=model.fc.in_features, nhead=1)
 
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-    def forward(self, feature, inp=None):
-        # print(feature.shape, inp[0].shape, inp[0].shape)
-        feature = self.features(feature)
-        # feature = self.pooling(feature)
-        # feature = feature.view(feature.size(0), -1)
-        # x = torch.flatten(feature, 1)
-        x = self.head(feature)
-        # x = self.sigm(x)
-        return x
+        self.sigmoid = nn.Sigmoid()
+    def forward(self, feature):
+        dec_inp = self.backbone(feature)
+        # print(dec_inp.shape)
 
+        intermediate_repr = self.intermediate(feature)
+        intermediate_repr = torch.swapaxes(intermediate_repr, 1, 2)
+        intermediate_repr = self.avg1d(intermediate_repr)
+        intermediate_repr = torch.squeeze(intermediate_repr, -1)
+        # print(intermediate_repr.shape)
+
+        dec_out = self.clf(dec_inp, intermediate_repr)
+        out_logit = self.sigmoid(self.avg1d_(dec_out))
+
+        return out_logit
     def get_config_optim(self, lr, lrp):
-        return [
-                {'params': self.head.fc.parameters(), 'lr': lr},#8
-                ]
-class BaseResnet(nn.Module):
-    def __init__(self, model, num_classes):
-        super(BaseResnet, self).__init__()
-        self.features = nn.Sequential(
-            model.conv1,
-            model.bn1,
-            model.relu,
-            model.maxpool,
-            model.layer1,
-            model.layer2,
-            model.layer3,
-            model.layer4,
-            model.avgpool,
-        )
-        self.num_classes = num_classes
-        # self.pooling = nn.MaxPool2d(14, 14)
-        self.fc = nn.Linear(model.fc.in_features, num_classes)
-        # self.layer_norm = nn.LayerNorm(normalized_shape=(num_classes,in_channel), eps=1e-5)
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-        self.sigm = nn.Sigmoid()
 
-    def forward(self, feature, inp):
-        # print(feature.shape, inp[0].shape, inp[0].shape)
-        feature = self.features(feature)
-        # feature = self.pooling(feature)
-        # feature = feature.view(feature.size(0), -1)
-        x = torch.flatten(feature, 1)
-        x = self.fc(x)
-        # x = self.sigm(x)
-        return x
+      return [{'params': self.clf.parameters(), 'lr': lr}]
 
-    def get_config_optim(self, lr, lrp):
-        return [
-                {'params': self.fc.parameters(), 'lr': lr},#8
-                ]
 
-class BaseResnet10t(nn.Module):
-    def __init__(self, model, num_classes):
-        super(BaseResnet10t, self).__init__()
-        # for name, child in model.named_children():
-        #     print(name)
-        self.features = nn.Sequential(
-            model.conv1,
-            model.bn1,
-            model.act1,
-            model.maxpool,
-            model.layer1,
-            model.layer2,
-            model.layer3,
-            model.layer4,
-            model.global_pool,
-        )
-        self.num_classes = num_classes
-        # self.pooling = nn.MaxPool2d(14, 14)
-        self.fc = nn.Linear(model.fc.in_features, num_classes)
-        # self.layer_norm = nn.LayerNorm(normalized_shape=(num_classes,in_channel), eps=1e-5)
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-        self.sigm = nn.Sigmoid()
-
-    def forward(self, feature, inp):
-        # print(feature.shape, inp[0].shape, inp[0].shape)
-        feature = self.features(feature)
-        # feature = self.pooling(feature)
-        # feature = feature.view(feature.size(0), -1)
-        x = torch.flatten(feature, 1)
-        x = self.fc(x)
-        # x = self.sigm(x)
-        return x
-
-    def get_config_optim(self, lr, lrp):
-        return get_resnet_optim_config(self.features, lr,lrp) + [
-                {'params': self.fc.parameters(), 'lr': lr},#8
-                ]
-from einops.layers.torch import Rearrange, Reduce
-# define ClassificationHead which gives the class probability
-class ClassificationHead(nn.Sequential):
-    def __init__(self, emb_size=768, n_classes = 10):
-        super().__init__(
-            Reduce('b n e -> b e', reduction='mean'),
-            nn.LayerNorm(emb_size),
-            nn.Linear(emb_size, n_classes))
-        self.in_features = emb_size
-class BaseViT(nn.Module):
-    def __init__(self, model, num_classes):
-        super(BaseViT, self).__init__()
-
-        self.features = nn.Sequential(
-            model.patch_embed,
-            model.pos_drop,
-            model.blocks,
-            Reduce('b n e -> b e', reduction='mean'),
-            nn.LayerNorm(model.head.in_features),
-            # model.norm,
-            # model.fc_norm,
-        )
-        # self.fc = ClassificationHead(model.head.in_features, num_classes)
-        print(model.head)
-        self.fc = nn.Linear(model.head.in_features, num_classes)
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-
-    def forward(self, feature, inp):
-        x = self.features(feature)
-        x = self.fc(x)
-        return x
-    def get_config_optim(self, lr, lrp):
-        return [
-                {'params': self.fc.parameters(), 'lr': lr}
-                ]
-
-class BaseSwin(nn.Module):
-    def __init__(self, model, num_classes):
-        super(BaseSwin, self).__init__()
-
-        self.features = nn.Sequential(
-            model.patch_embed,
-            model.pos_drop,
-            model.layers,
-            Reduce('b n e -> b e', reduction='mean'),
-            nn.LayerNorm(model.head.in_features),
-            # model.norm,
-            # model.fc_norm,
-        )
-        self.fc = nn.Linear(model.head.in_features, num_classes)
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-
-    def forward(self, feature, inp=None):
-        # print(feature.shape)
-        x = self.features(feature)
-        x = self.fc(x)
-        # print(x.shape)
-        return x
-    def get_config_optim(self, lr, lrp):
-        return [
-                {'params': self.fc.parameters(), 'lr': lr}
-                ]
-class BaseMlpMixer(nn.Module):
-    def __init__(self, model, num_classes):
-        super(BaseMlpMixer, self).__init__()
-
-        self.features = nn.Sequential(
-            model.stem,
-            model.blocks,
-            Reduce('b n e -> b e', reduction='mean'),
-            nn.LayerNorm(model.head.in_features),
-            # model.norm,
-            # model.fc_norm,
-        )
-        self.fc = nn.Linear(model.head.in_features, num_classes)
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-
-    def forward(self, feature, inp):
-        # print(feature.shape)
-        x = self.features(feature)
-        x = self.fc(x)
-        # print(x.shape)
-        return x
-    def get_config_optim(self, lr, lrp):
-        return [
-                {'params': self.fc.parameters(), 'lr': lr}
-                ]
-class BaseConvNext(nn.Module):
-    def __init__(self, model, num_classes):
-        super(BaseConvNext, self).__init__()
-
-        self.features = nn.Sequential(
-            model.stem,
-            model.stages,
-            model.norm_pre,
-        )
-        in_features = model.head[-1].in_features
-        model.head[-1] = nn.Linear(in_features, num_classes)
-        self.fc = model.head
-        # self.fc = nn.Linear(model.head.in_features, num_classes)
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-
-    def forward(self, feature, inp):
-        # print(feature.shape)
-        x = self.features(feature)
-
-        x = self.fc(x)
-        # print(x.shape)
-        return x
-    def get_config_optim(self, lr, lrp):
-        return [
-                {'params': self.fc.parameters(), 'lr': lr}
-                ]
-
-def base_mlpmixer(model_path, num_classes, image_size, pretrained=True):
+def base_mlpmixer(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
         # print(p.requires_grad)
-    return BaseMlpMixer(model, num_classes)
-def base_convnext(model_path, num_classes, image_size, pretrained=True):
+    if cond: return InterMlpMixer(model, num_classes, where)
+    else: return BaseMlpMixer(model, num_classes)
+def base_convnext(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
         # print(p.requires_grad)
-    return BaseConvNext(model, num_classes)
-def base_swin(model_path, num_classes, image_size, pretrained=True, requires_grad=False):
-    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
-    if not requires_grad:
-      for n, p in model.named_parameters():
-        if p.requires_grad:
-          p.requires_grad=False
-        # print(p.requires_grad)
-    return BaseSwin(model, num_classes)
-def base_vit(model_path, num_classes, image_size, pretrained=True):
+    if cond: return InterConvNext(model, num_classes, where)
+    else: return BaseConvNext(model, num_classes)
+def base_swin(model_path, num_classes, image_size, pretrained=True,cond=True, where=0, aggregate='1d'):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
         # print(p.requires_grad)
-    return BaseViT(model, num_classes)
+    if cond: return InterSwin(model, image_size, num_classes, where=where, aggregate=aggregate)
+    else: return BaseSwin(model, image_size, num_classes)
+def base_vit(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
+    for n, p in model.named_parameters():
+      if p.requires_grad:
+        p.requires_grad=False
+        # print(p.requires_grad)
+    if cond:
+      return InterViT(model, num_classes, where=where)
+    else: return BaseViT(model, num_classes)
 def base_resnet10(num_classes, pretrained=False):
     # model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=0)
     model = timm.create_model('resnet10t', pretrained=True)
@@ -722,12 +539,13 @@ def base_resnet34(num_classes, pretrained=True):
         p.requires_grad=False
     return BaseResnet(model, num_classes)
 
-def base_resnet50(model_path, num_classes, pretrained=True):
+def base_resnet50(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
-    return BaseResnetV2(model, num_classes)
+    if cond: InterResnetV2(model, image_size, num_classes, where)
+    else: BaseResnetV2(model, image_size , num_classes)
 
 def base_resnet152(num_classes, pretrained=True):
     model = models.resnet152(pretrained=pretrained)
@@ -736,14 +554,16 @@ def base_resnet152(num_classes, pretrained=True):
         p.requires_grad=False
     return BaseResnet(model, num_classes)
 
-def base_resnet101(num_classes, pretrained=True):
-    model = models.resnet101(pretrained=pretrained)
+def base_resnet101(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, aggregate="1d"):
+    # model = models.resnet101(pretrained=pretrained)
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
-    return BaseResnet(model, num_classes)
+    if cond: return InterResnetV2(model, image_size, num_classes, where, aggregate)
+    else: return BaseResnetV2(model, image_size, num_classes)
 
-def finetune_clf(model, finetune, num_classes, num_block, num_head, adj_file=None):
+def finetune_clf(model, finetune, num_classes, adj_file=None):
     if finetune=="base":
         return model
     elif finetune=="gcn":
@@ -754,8 +574,10 @@ def finetune_clf(model, finetune, num_classes, num_block, num_head, adj_file=Non
         return GAT_clf(model, num_classes, in_channel=300, adj_file=adj_file)
     elif finetune=="sa":
         return TRANSCONV_clf(model, num_classes, in_channel=300, adj_file=adj_file)
-    elif finetune=="transformer_encoder":
-        return TRANSFORMER_ENCODER_2_clf(model, num_classes, num_block, num_head)
+    elif finetune=="te":
+        return TRANSFORMER_ENCODER_2_clf(model, num_classes, 4, 1)
+    elif finetune=="td":
+        return TD_clf(model, num_classes)
     elif finetune=='mha':
         return MHA(model, num_classes, in_channel=300, heads=4, adj_file=adj_file)
     elif finetune=='se':

@@ -99,7 +99,7 @@ def categoty_to_idx(category):
 
 
 class COCO2014(data.Dataset):
-    def __init__(self, root, transform=None, phase='train', inp_name=None, label_count=None):
+    def __init__(self, root, transform=None, phase='train', label_count=None):
         self.root = root
         self.phase = phase
         self.img_list = []
@@ -109,10 +109,12 @@ class COCO2014(data.Dataset):
         self.get_anno()
         self.num_classes = len(self.cat2idx)
         
-
-        with open(inp_name, 'rb') as f:
-            self.inp = pickle.load(f)
-        self.inp_name = inp_name
+        # if inp_name:
+        #   with open(inp_name, 'rb') as f:
+        #       self.inp = pickle.load(f)
+        # else:
+        #   self.inp = None
+        # self.inp_name = inp_name
 
     def get_anno(self):
         if self.lab_cnt:
@@ -136,4 +138,4 @@ class COCO2014(data.Dataset):
             img = self.transform(img)
         target = np.zeros(self.num_classes, np.float32) - 1
         target[labels] = 1
-        return (img, filename, self.inp), target
+        return (img, filename), target

@@ -313,7 +313,7 @@ class Engine(object):
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         if is_best:
-            filename_best = '{}_{}_{}_best.pth.tar'.format(self.state['model'], self.state['finetune'], self.state['best_score'])
+            filename_best = '{}_{}_{}_{}_best.pth.tar'.format(self.state['dataset'], self.state['wandb'],self.state['model'], self.state['finetune'])
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
             # shutil.copyfile(filename, filename_best)
@@ -423,15 +423,15 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
     def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None):
         feature_var = torch.autograd.Variable(self.state['feature']).float()
         target_var = torch.autograd.Variable(self.state['target']).float()
-        inp_var = torch.autograd.Variable(self.state['input']).float().detach()  # one hot
+        # inp_var = torch.autograd.Variable(self.state['input']).float().detach()  # one hot
         if not training:
             with torch.no_grad():
                 # compute output
-                self.state['output'] = model(feature_var, inp_var)
+                self.state['output'] = model(feature_var)
                 self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
-            self.state['output'] = model(feature_var, inp_var)
+            self.state['output'] = model(feature_var)
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
             self.state['loss'].backward()
@@ -439,6 +439,7 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
             optimizer.step()
             if scheduler:
                 scheduler.step()
+                # print(scheduler.get_last_lr()[0])
 
 
     def on_start_batch(self, training, model, criterion, data_loader, optimizer=None, display=True):
@@ -450,5 +451,5 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         input = self.state['input']
         self.state['feature'] = input[0]
         self.state['out'] = input[1]
-        self.state['input'] = input[2]
+        # self.state['input'] = input[2]
 
