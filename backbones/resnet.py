@@ -61,7 +61,7 @@ class BaseResnetV2(nn.Module):
                   {'params': self.fc.parameters(), 'lr': lr},
                   ]
 class InterResnetV2(nn.Module):
-    def __init__(self, model, image_size=224, num_classes=80, where =0, aggregate="10"):
+    def __init__(self, model, image_size=224, num_classes=80, where =0, aggregate="1"):
         super(InterResnetV2, self).__init__()
         li = [model.stem, model.stages[0], model.stages[1], model.stages[2], model.stages[3], 
         # model.norm, 
@@ -92,15 +92,18 @@ class InterResnetV2(nn.Module):
         inp = inp.unsqueeze(0)
         out = self.intermediate(inp)
         _, n, h, w = out.shape
+        print(out.shape)
         _, self.n_, self.h_, self.w_ = self.features(out).shape
+        print(_, self.n_, self.h_, self.w_)
         # print(self.features(out).shape)
 
         
-        self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
+        # self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
         # if self.aggr_type=='1d':
           # self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
-        # elif self.aggr_type=='conv1d':
-          # self.pool = nn.Conv1d(n,(self.n_), h*w - self.h_*self.w_ + 1, stride=1)
+        # elif self.aggr_type=='conv2d':
+        # self.pool = nn.Conv2d(n,(self.n_), (2,2), stride=(1,1), dilation=(h-self.h_, w-self.w_))
+        self.pool = nn.Conv2d(256, 2048, (2, 2), stride=(171, 171), dilation=(2, 2), padding=1)
         self.sigmoid = nn.Sigmoid()
         del(inp)
         del(out)
@@ -111,10 +114,12 @@ class InterResnetV2(nn.Module):
         out = self.features(intermediate_cp)
 
         if self.aggr_type=="1":
-          b = intermediate_repr.shape[0]
-          intermediate_repr = intermediate_repr.reshape((b, -1))
+          # b = intermediate_repr.shape[0]
+          # intermediate_repr = intermediate_repr.reshape((b, -1))
+          # print(intermediate_repr.shape)
           inter_out = self.pool(intermediate_repr)
-          inter_out = inter_out.reshape((b, self.n_, self.h_, self.w_))
+          # print(inter_out.shape)
+          # inter_out = inter_out.reshape((b, self.n_ * self.h_ *self.w_, 1, 1))
 
           out = out.squeeze()
           out = out.squeeze()
@@ -171,47 +176,48 @@ class InterResnetV2(nn.Module):
               {'params': self.scale, 'lr': lr}
               ]
 class InterResnet(nn.Module):
-    def __init__(self, model, num_classes, where=0):
+    def __init__(self, model, image_size, num_classes, where=0, aggregate="1"):
         super(InterResnet, self).__init__()
-        self.features = nn.Sequential(
-            model.conv1,
-            model.bn1,
-            model.act1,
-            model.maxpool,
-            model.layer1,
-            model.layer2,
-            model.layer3,
-            model.layer4,
-            model.global_pool,
-        )
+        li = [model.conv1, model.bn1, model.act1, model.maxpool, model.layer1, model.layer2, model.layer3, model.layer4, model.global_pool]
+        self.inter= nn.Sequential(*li[:where+4])
+        self.features = nn.Sequential(*li[where+4:])
+
         self.num_classes = num_classes
+
+        self.aggr_type = aggregate
+        if self.aggr_type=='1':
+          self.l_alpha = nn.Linear(model.fc.in_features, 1)
+        self.scale = nn.Parameter(torch.cuda.FloatTensor([0.1]))
         # self.pooling = nn.MaxPool2d(14, 14)
         self.fc = nn.Linear(model.fc.in_features, num_classes)
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
-
-        li = [model.conv1, model.bn1, model.act1, model.maxpool, model.layer1, model.layer2, model.layer3, model.layer4][:where+4]
-        self.inter = nn.Sequential(*li)
-        self.scale = nn.Parameter(torch.cuda.FloatTensor([0.01]))
-
-        inp = torch.rand(3, 224, 224)
+        
+        inp = torch.rand(3, image_size, image_size)
         inp = torch.unsqueeze(inp, 0)
         out = self.inter(inp)
         b, n, h, w = out.shape
-        print( n, h, w)
-        self.avg = nn.AvgPool1d(n*h*w - model.fc.in_features +1, stride=1)
+        # b_, n_, h_, w_ = self.features[:-2](out)
+        # print( n, h, w)
+        # self.pool = nn.AvgPool1d(n*h*w - model.fc.in_features +1, stride=1)
+        self.pool = nn.Conv1d(n, model.fc.in_features, (122*122-16*16+1), stride=1, bias=False)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, feature):
 
-        x = self.features(feature)
+        inter = self.inter(feature)#b,n,h,w
+        inter_cp = copy.deepcopy(inter)
+        inter = inter.reshape((inter.shape[0], inter.shape[1], -1))#b,n,hw
+        inter = self.pool(inter)#b,1024
+
+        x = self.features(inter_cp)
         x = torch.flatten(x, 1)
 
-        inter = self.inter(feature)#b,n,h,w
-        inter = inter.reshape((inter.shape[0], -1))#b,nhw
-        inter = self.avg(inter)#b,1024
-        x = x*(1-self.scale) + inter*self.scale
-
-
+        if self.aggr_type == "1":
+          act = self.sigmoid(self.l_alpha(x))
+          act_ = act * self.scale
+          x = x*(1- act_) + inter* act_
+        
         x_logit = self.fc(x)
         # x = self.sigm(x)
         return x_logit
@@ -219,7 +225,8 @@ class InterResnet(nn.Module):
     def get_config_optim(self, lr, lrp):
         return [
                 {'params': self.fc.parameters(), 'lr': lr},#8
-                {'params': self.scale, 'lr': lr}
+                {'params': self.scale, 'lr': lr},
+                {'params': self.l_alpha.parameters(), 'lr': lr},
                 ]
 class BaseResnet(nn.Module):
     def __init__(self, model, num_classes):

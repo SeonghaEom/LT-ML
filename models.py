@@ -468,10 +468,10 @@ class TD_clf(nn.Module):
         self.sigmoid = nn.Sigmoid()
     def forward(self, feature):
         dec_inp = self.backbone(feature)
-        # print(dec_inp.shape)
+        print(dec_inp.shape)
 
         intermediate_repr = self.intermediate(feature)
-        intermediate_repr = torch.swapaxes(intermediate_repr, 1, 2)
+        # intermediate_repr = torch.swapaxes(intermediate_repr, 1, 2)
         intermediate_repr = self.avg1d(intermediate_repr)
         intermediate_repr = torch.squeeze(intermediate_repr, -1)
         # print(intermediate_repr.shape)
@@ -539,13 +539,14 @@ def base_resnet34(num_classes, pretrained=True):
         p.requires_grad=False
     return BaseResnet(model, num_classes)
 
-def base_resnet50(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
+def base_resnet50(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, aggregate="1"):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
-    if cond: InterResnetV2(model, image_size, num_classes, where)
-    else: BaseResnetV2(model, image_size , num_classes)
+    # if cond: InterResnetV2(model, image_size, num_classes, where, aggregate)
+    if cond: return InterResnet(model, image_size, num_classes, where, aggregate)
+    else: return BaseResnet(model, image_size , num_classes)
 
 def base_resnet152(num_classes, pretrained=True):
     model = models.resnet152(pretrained=pretrained)

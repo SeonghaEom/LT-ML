@@ -46,7 +46,9 @@ class BaseSwin(nn.Module):
         return x
     def get_config_optim(self, lr, lrp):
         return [
-                {'params': self.fc.parameters(), 'lr': lr}
+                {'params': self.features.parameters(), 'lr': lrp},
+                {'params': self.fc.parameters(), 'lr': lr},
+                
                 ]
 class InterSwin(nn.Module):
     def __init__(self, model, image_size, num_classes, where=0, aggregate="1"):
@@ -118,5 +120,5 @@ class InterSwin(nn.Module):
                 # {'params': self.features[-1].parameters(), 'lr': lr},
                 {'params': self.l_alpha.parameters(), 'lr': lr},
                 {'params': self.fc.parameters(), 'lr': lr},
-                # {'params': self.scale, 'lr': lr},
+                {'params': self.scale, 'lr': lr},
                 ]
