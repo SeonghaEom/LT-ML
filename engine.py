@@ -435,7 +435,7 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
             self.state['loss'].backward()
-            nn.utils.clip_grad_norm(model.parameters(), max_norm=1.0)
+            nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             if scheduler:
                 scheduler.step()
