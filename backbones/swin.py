@@ -115,8 +115,8 @@ class InterSwin(nn.Module):
         return out_logit
     def get_config_optim(self, lr, lrp):
         return [
-                # {'params': self.features[-1].parameters(), 'lr': lr},
+                {'params': self.features[-1].parameters(), 'lr': lrp},
                 {'params': self.l_alpha.parameters(), 'lr': lr},
                 {'params': self.fc.parameters(), 'lr': lr},
-                # {'params': self.scale, 'lr': lr},
+                {'params': self.scale, 'lr': lr},
                 ]
