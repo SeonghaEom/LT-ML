@@ -97,13 +97,28 @@ class InterResnetV2(nn.Module):
         print(_, self.n_, self.h_, self.w_)
         # print(self.features(out).shape)
 
+        self.squeeze = nn.AdaptiveAvgPool2d(1)
+
+        # self.excitation = nn.Sequential(
+        #     # nn.Linear(c, c // r, bias=False),
+        #     # nn.ReLU(inplace=True),
+        #     nn.Linear(n, self.n_, bias=False),
+        #     nn.Sigmoid()
+        # )
+        self.excitation = nn.Sequential(
+            nn.Linear(h*w, self.h_*self.w_, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Flatten(start_dim=1),
+            nn.Linear(n, self.n_, bias=False),
+            nn.Sigmoid()
+        )
         
         # self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
         # if self.aggr_type=='1d':
           # self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
         # elif self.aggr_type=='conv2d':
         # self.pool = nn.Conv2d(n,(self.n_), (2,2), stride=(1,1), dilation=(h-self.h_, w-self.w_))
-        self.pool = nn.Conv2d(256, 2048, (2, 2), stride=(171, 171), dilation=(2, 2), padding=1)
+        self.pool = nn.Conv2d(n, self.n_, (2, 2), stride=(h, w), dilation=(2, 2), padding=1)
         self.sigmoid = nn.Sigmoid()
         del(inp)
         del(out)
@@ -114,17 +129,23 @@ class InterResnetV2(nn.Module):
         out = self.features(intermediate_cp)
 
         if self.aggr_type=="1":
-          # b = intermediate_repr.shape[0]
+          b,n, _,_ = intermediate_repr.shape
           # intermediate_repr = intermediate_repr.reshape((b, -1))
           # print(intermediate_repr.shape)
-          inter_out = self.pool(intermediate_repr)
+
+          # intermediate_repr = self.squeeze(intermediate_repr).view(b, -1)
+
+          inter_out = self.excitation(intermediate_repr.view(b, n, -1))
+          # inter_out = self.pool(intermediate_repr)
+          # inter_out = self.sigmoid(inter_out)
           # print(inter_out.shape)
           # inter_out = inter_out.reshape((b, self.n_ * self.h_ *self.w_, 1, 1))
 
           out = out.squeeze()
           out = out.squeeze()
-          inter_out = inter_out.squeeze()
-          inter_out = inter_out.squeeze()
+          # inter_out = inter_out.squeeze()
+          # inter_out = inter_out.squeeze()
+          
           act = self.sigmoid(self.l_alpha(out))
           # act = self.sigmoid(out)
           # print(act.shape, act[0])
@@ -169,11 +190,12 @@ class InterResnetV2(nn.Module):
 
     def get_config_optim(self, lr, lrp):
         return [
-              {'params': self.features[-2].parameters(), 'lr': lr},
+              # {'params': self.features[-2].parameters(), 'lr': lr},
               {'params': self.l_alpha.parameters(), 'lr': lr},
               {'params': self.pool.parameters(), 'lr': lr},
               {'params': self.fc.parameters(), 'lr': lr},
-              {'params': self.scale, 'lr': lr}
+              {'params': self.scale, 'lr': lr},
+              {'params': self.excitation.parameters(), 'lr': lr},
               ]
 class InterResnet(nn.Module):
     def __init__(self, model, image_size, num_classes, where=0, aggregate="1"):
@@ -200,7 +222,7 @@ class InterResnet(nn.Module):
         # b_, n_, h_, w_ = self.features[:-2](out)
         # print( n, h, w)
         # self.pool = nn.AvgPool1d(n*h*w - model.fc.in_features +1, stride=1)
-        self.pool = nn.Conv1d(n, model.fc.in_features, (122*122-16*16+1), stride=1, bias=False)
+        self.pool = nn.Conv2d(n, model.fc.in_features, (122*122-16*16+1), stride=1, bias=False)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, feature):
