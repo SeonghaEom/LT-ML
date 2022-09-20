@@ -64,8 +64,8 @@ class InterResnetV2(nn.Module):
     def __init__(self, model, image_size=224, num_classes=80, where =0, aggregate="1"):
         super(InterResnetV2, self).__init__()
         li = [model.stem, model.stages[0], model.stages[1], model.stages[2], model.stages[3], 
-        # model.norm, 
-        GroupNormAct(2048, 32, eps=1e-05, affine=True),
+        model.norm, 
+        # GroupNormAct(2048, 32, eps=1e-05, affine=True),
         model.head.global_pool]
         self.intermediate = nn.Sequential(*li[:where+2])
         self.features = nn.Sequential(*li[where+2:])
@@ -118,7 +118,7 @@ class InterResnetV2(nn.Module):
           # self.pool = nn.AvgPool1d((n*h*w) - (self.n_*self.w_*self.h_) + 1, stride=1)
         # elif self.aggr_type=='conv2d':
         # self.pool = nn.Conv2d(n,(self.n_), (2,2), stride=(1,1), dilation=(h-self.h_, w-self.w_))
-        self.pool = nn.Conv2d(n, self.n_, (2, 2), stride=(h, w), dilation=(2, 2), padding=1)
+        # self.pool = nn.Conv2d(n, self.n_, (2, 2), stride=(h, w), dilation=(2, 2), padding=1)
         self.sigmoid = nn.Sigmoid()
         del(inp)
         del(out)
@@ -192,7 +192,7 @@ class InterResnetV2(nn.Module):
         return [
               # {'params': self.features[-2].parameters(), 'lr': lr},
               {'params': self.l_alpha.parameters(), 'lr': lr},
-              {'params': self.pool.parameters(), 'lr': lr},
+              # {'params': self.pool.parameters(), 'lr': lr},
               {'params': self.fc.parameters(), 'lr': lr},
               {'params': self.scale, 'lr': lr},
               {'params': self.excitation.parameters(), 'lr': lr},

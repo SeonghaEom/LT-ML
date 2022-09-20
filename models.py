@@ -544,9 +544,9 @@ def base_resnet50(model_path, num_classes, image_size, pretrained=True, cond=Tru
     for n, p in model.named_parameters():
       if p.requires_grad:
         p.requires_grad=False
-    # if cond: InterResnetV2(model, image_size, num_classes, where, aggregate)
-    if cond: return InterResnet(model, image_size, num_classes, where, aggregate)
-    else: return BaseResnet(model, image_size , num_classes)
+    if cond: return InterResnetV2(model, image_size, num_classes, where, aggregate)
+    # if cond: return InterResnet(model, image_size, num_classes, where, aggregate)
+    else: return BaseResnetV2(model, image_size , num_classes)
 
 def base_resnet152(num_classes, pretrained=True):
     model = models.resnet152(pretrained=pretrained)
