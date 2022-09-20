@@ -1,6 +1,6 @@
 config = {
-  # "resnet50": 'resnetv2_50x3_bitm_in21k',
-  "resnet50": 'resnet50',
+  "resnet50": 'resnetv2_50x3_bitm_in21k',
+  # "resnet50": 'resnet50',
   # "vit": 'vit_base_patch16_224_in21k', 
   # "vit": 'mvitv2_base_in21k',
   # 'vit-hybrid': 'vit_base_r50_s16_224_in21k',
