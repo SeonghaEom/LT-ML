@@ -114,7 +114,7 @@ class InterSwin(nn.Module):
                   
         out = out * ( 1 - act_) + inter * act_
         out_logit = self.fc(out)
-        return out_logit
+        return out_logit, act_, self.scale
     def get_config_optim(self, lr, lrp):
         return [
                 # {'params': self.features[-1].parameters(), 'lr': lr},
