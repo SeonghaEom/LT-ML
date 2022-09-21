@@ -58,6 +58,7 @@ class BaseResnetV2(nn.Module):
 
     def get_config_optim(self, lr, lrp):
           return [
+            {'params': self.features.parameters(), 'lr': lrp},
                   {'params': self.fc.parameters(), 'lr': lr},
                   ]
 class InterResnetV2(nn.Module):

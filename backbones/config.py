@@ -9,5 +9,6 @@ config = {
   "convnext":'convnext_large_in22k',
   # "convnext": "convnext_xlarge_in22k",
   # "mlpmixer":'mixer_b16_224_in21k',
-  "resnet101": 'resnetv2_101x1_bitm_in21k',
+  # "resnet101": 'resnetv2_101x1_bitm_in21k',
+  "resnet101": 'resnetv2_101x3_bitm_in21k',
 }
