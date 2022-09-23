@@ -75,7 +75,7 @@ class InterSwin(nn.Module):
 
 
         self.aggr_type = aggregate
-        self.scale = nn.Parameter(torch.cuda.FloatTensor([0.1]))
+        # self.scale = nn.Parameter(torch.cuda.FloatTensor([0.1]))
         if self.aggr_type=="1":
           self.l_alpha = nn.Linear(model.head.in_features, 1)
         elif self.aggr_type=="10":
@@ -95,8 +95,10 @@ class InterSwin(nn.Module):
 
 
     def forward(self, feature,):
+        feat_cp = copy.deepcopy(feature)
         inter = self.inter(feature)
-        inter_cp = copy.deepcopy(inter)
+        # inter_cp = copy.deepcopy(inter)
+        inter_cp = self.inter(feat_cp)
         out = self.features(inter_cp)
 
         inter = inter.reshape((inter.shape[0], -1))
@@ -105,20 +107,20 @@ class InterSwin(nn.Module):
         if self.aggr_type=="1":
             
           act = self.sigmoid(self.l_alpha(out))
-          act_ = act * self.scale
+          # act_ = act * self.scale
 
         elif self.aggr_type=="10":
           val, ind = torch.max(self.l_alpha(out), 1)
           act_ = ind * 0.1 * self.scale
           act_ = act_.unsqueeze(-1)
                   
-        out = out * ( 1 - act_) + inter * act_
+        out = out * ( 1 - act) + inter * act
         out_logit = self.fc(out)
-        return out_logit, act_, self.scale
+        return out_logit
     def get_config_optim(self, lr, lrp):
         return [
                 {'params': self.features[-1].parameters(), 'lr': lrp},
                 {'params': self.l_alpha.parameters(), 'lr': lr},
                 {'params': self.fc.parameters(), 'lr': lr},
-                {'params': self.scale, 'lr': lr},
+                # {'params': self.scale, 'lr': lr},
                 ]

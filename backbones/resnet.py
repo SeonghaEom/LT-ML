@@ -107,10 +107,10 @@ class InterResnetV2(nn.Module):
         #     nn.Sigmoid()
         # )
         self.excitation = nn.Sequential(
-            nn.Linear(h*w, self.h_*self.w_, bias=False),
-            nn.ReLU(inplace=True),
+            # nn.Linear(h*w, 1, bias=False),
+            # nn.ReLU(inplace=True),
             nn.Flatten(start_dim=1),
-            nn.Linear(n, self.n_, bias=False),
+            nn.Linear(n, self.n_, bias=False),#768->6144
             nn.Sigmoid()
         )
         
@@ -136,11 +136,13 @@ class InterResnetV2(nn.Module):
 
           # intermediate_repr = self.squeeze(intermediate_repr).view(b, -1)
 
-          inter_out = self.excitation(intermediate_repr.view(b, n, -1))
+          # inter_out = self.excitation(intermediate_repr.view(b, n, -1))
+          inter_out = self.excitation(self.squeeze(intermediate_repr))
           # inter_out = self.pool(intermediate_repr)
           # inter_out = self.sigmoid(inter_out)
           # print(inter_out.shape)
           # inter_out = inter_out.reshape((b, self.n_ * self.h_ *self.w_, 1, 1))
+        
 
           out = out.squeeze()
           out = out.squeeze()
@@ -150,7 +152,8 @@ class InterResnetV2(nn.Module):
           act = self.sigmoid(self.l_alpha(out))
           # act = self.sigmoid(out)
           # print(act.shape, act[0])
-          act_ = act * self.scale
+          # act_ = act * self.scale
+          act_ = act
           ## hadamard product
           # print(act[0])
           out = out*(1-act_) + inter_out*act_
