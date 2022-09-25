@@ -126,8 +126,8 @@ class InterResnetV2(nn.Module):
 
     def forward(self, feature):
         intermediate_repr = self.intermediate(feature)
-        intermediate_cp = copy.deepcopy(intermediate_repr)
-        out = self.features(intermediate_cp)
+        # intermediate_cp = copy.deepcopy(intermediate_repr)
+        out = self.features(intermediate_repr)
 
         if self.aggr_type=="1":
           b,n, _,_ = intermediate_repr.shape
@@ -198,7 +198,7 @@ class InterResnetV2(nn.Module):
               {'params': self.l_alpha.parameters(), 'lr': lr},
               # {'params': self.pool.parameters(), 'lr': lr},
               {'params': self.fc.parameters(), 'lr': lr},
-              {'params': self.scale, 'lr': lr},
+              # {'params': self.scale, 'lr': lr},
               {'params': self.excitation.parameters(), 'lr': lr},
               ]
 class InterResnet(nn.Module):
