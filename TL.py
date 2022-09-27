@@ -76,11 +76,13 @@ parser.add_argument('--lr_scheduler',action='store_true',
                     help='lr_schedule'),
 parser.add_argument('--intermediate',action='store_true', 
                     help='intermediate'),
+parser.add_argument('--finetune',action='store_true', 
+                    help='finetune'),
 
 parser.add_argument('--dataset', default='voc', type=str)
 parser.add_argument('--model', default='', type=str,
                     help='model name [resnet10, resnet18, resnet34, resnet50, resnet101, resnet152, vit]')
-parser.add_argument('--finetune', default="base", type=str,
+parser.add_argument('--clf', default="base", type=str,
                     help="finetuning model type [fc, gcn, sage, sa, transformer_encoder]")
 parser.add_argument('--where', default=0, type=int) 
 parser.add_argument('--aggr_type', default='1', type=str, 
@@ -111,29 +113,20 @@ def main():
 
     resume = True if len(args.resume) else False
     if len(args.wandb) :
-        wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}".format(args.wandb, args.finetune, args.seed), entity='seonghaeom')
+        wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}-{}".format(args.wandb, args.clf, args.seed), entity='seonghaeom')
 
 
 
     #exp1 model variants
     m_path = config[args.model]
     print("model path: {}".format(m_path))
-    if args.model == 'resnet10':
-        model = base_resnet10(num_classes=num_classes, pretrained=True)
-    elif args.model == 'resnet18':
-        model = base_resnet18(num_classes=num_classes, pretrained=True)
-    elif args.model == 'resnet34':
-        model = base_resnet34(num_classes=num_classes, pretrained=True)
-    elif args.model == 'resnet50':
-        model = base_resnet50(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where)
-    elif args.model == 'resnet101':
-        model = base_resnet101(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, aggregate=args.aggr_type)
-    elif args.model == 'resnet152':
-        model = base_resnet152(num_classes=num_classes, pretrained=True)
+
+    if args.model == 'resnet50' or args.model == 'resnet101':
+        model = base_resnet(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, finetune=args.finetune)
     elif args.model == 'vit':
         model = base_vit(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where)
     elif args.model == 'swin':
-        model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, aggregate=args.aggr_type)
+        model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, aggregate=args.aggr_type, finetune=args.finetune)
     elif args.model == 'swin_large':
         model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, aggregate=args.aggr_type)
     elif args.model == 'convnext':
@@ -145,7 +138,7 @@ def main():
 
     # exp2 load model
     adj_file = 'data/{}/{}_adj.pkl'.format(args.dataset, args.dataset)
-    model = finetune_clf(model, args.finetune, num_classes=num_classes, adj_file=adj_file)
+    model = finetune_clf(model, args.clf, num_classes=num_classes, adj_file=adj_file)
 
     # define loss function (criterion)
     if args.loss == "softmargin":
@@ -181,7 +174,7 @@ def main():
         state['wandb'] = None
     
     state['name'] = args.name
-    state['finetune'] = args.finetune
+    state['clf'] = args.clf
     state['model'] = args.model
     state['dataset'] = args.dataset
 
