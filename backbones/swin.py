@@ -51,7 +51,7 @@ class BaseSwin(nn.Module):
                 
                 ]
 class InterSwin(nn.Module):
-    def __init__(self, model, image_size, num_classes, where=0, aggregate="1"):
+    def __init__(self, model, image_size, num_classes, where=0, finetune=False):
         super(InterSwin, self).__init__()
         print("InterSwin")
         li = [
@@ -67,19 +67,17 @@ class InterSwin(nn.Module):
         ]
         self.inter = nn.Sequential(*li[:where+3])
         self.features = nn.Sequential(*li[where+3:])
+        self.finetune= finetune
 
         self.fc = nn.Linear(model.head.in_features, num_classes)
         # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-
-        self.aggr_type = aggregate
         self.scale = nn.Parameter(torch.cuda.FloatTensor([0.1]))
-        if self.aggr_type=="1" or self.aggr_type=="0":
-          self.l_alpha = nn.Linear(model.head.in_features, 1)
-        elif self.aggr_type=="10":
-          self.l_alpha = nn.Linear(model.head.in_features, 10)
+
+        self.l_alpha = nn.Linear(model.head.in_features, 1)
+
 
         inp = torch.rand(3, image_size, image_size)
         inp = torch.unsqueeze(inp, 0)
@@ -103,29 +101,22 @@ class InterSwin(nn.Module):
 
         inter = inter.reshape((inter.shape[0], -1))
         inter = self.pool(inter).squeeze(-1)
-
-        if self.aggr_type=="0":
             
-          act = self.sigmoid(self.l_alpha(out))
-          act_ = act
-
-        if self.aggr_type=="1":
-            
-          act = self.sigmoid(self.l_alpha(out))
-          act_ = act * self.scale
-
-        elif self.aggr_type=="10":
-          val, ind = torch.max(self.l_alpha(out), 1)
-          act_ = ind * 0.1 * self.scale
-          act_ = act_.unsqueeze(-1)
+        act = self.sigmoid(self.l_alpha(out))
                   
-        out = out * ( 1 - act_) + inter * act_
+        out = out * ( 1 - act) + inter * act
         out_logit = self.fc(out)
         return out_logit
     def get_config_optim(self, lr, lrp):
-        return [
+        default = [
                 {'params': self.features[-1].parameters(), 'lr': lrp},
                 {'params': self.l_alpha.parameters(), 'lr': lr},
                 {'params': self.fc.parameters(), 'lr': lr},
-                {'params': self.scale, 'lr': lr},
+                # {'params': self.scale, 'lr': lr},
                 ]
+        if self.finetune:
+          default += [
+            {'params': self.inter.parameters(), 'lr': lrp},
+            {'params': self.features[:-1].parameters(), 'lr': lrp},
+          ]
+        return default

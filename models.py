@@ -501,15 +501,15 @@ def base_convnext(model_path, num_classes, image_size, pretrained=True, cond=Tru
         # print(p.requires_grad)
     if cond: return InterConvNext(model, num_classes, where)
     else: return BaseConvNext(model, num_classes)
-def base_swin(model_path, num_classes, image_size, pretrained=True,cond=True, where=0, aggregate='1'):
+def base_swin(model_path, num_classes, image_size, pretrained=True,cond=True, where=0, aggregate='1', finetune=False):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
 
-    if cond:
+    if not finetune:
       for n, p in model.named_parameters():
         if p.requires_grad:
           p.requires_grad=False
           # print(p.requires_grad)
-      return InterSwin(model, image_size, num_classes, where=where, aggregate=aggregate)
+      return InterSwin(model, image_size, num_classes, where, finetune)
     else: return BaseSwin(model, image_size, num_classes)
 def base_vit(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
@@ -520,55 +520,17 @@ def base_vit(model_path, num_classes, image_size, pretrained=True, cond=True, wh
     if cond:
       return InterViT(model, num_classes, where=where)
     else: return BaseViT(model, num_classes)
-def base_resnet10(num_classes, pretrained=False):
-    # model = timm.create_model('vit_base_patch16_224', pretrained=True, num_classes=0)
-    model = timm.create_model('resnet10t', pretrained=True)
-    config = resolve_data_config({}, model=model)
-    transform = create_transform(**config)
-    return BaseResnet10t(model, num_classes)
 
-def base_resnet18(num_classes, pretrained=True):
-    model = models.resnet18(pretrained=pretrained)
-    for n, p in model.named_parameters():
-      if p.requires_grad:
-        p.requires_grad=False
-    return BaseResnet(model, num_classes)
-
-def base_resnet34(num_classes, pretrained=True):
-    model = models.resnet34(pretrained=pretrained)
-    for n, p in model.named_parameters():
-      if p.requires_grad:
-        p.requires_grad=False
-    return BaseResnet(model, num_classes)
-
-def base_resnet50(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, aggregate="1"):
+def base_resnet(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, finetune=False):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
 
-    if cond:
+    if not finetune:
       for n, p in model.named_parameters():
         if p.requires_grad:
           p.requires_grad=False
-      return InterResnetV2(model, image_size, num_classes, where, aggregate)
+      return InterResnetV2(model, image_size, num_classes, where,finetune)
     # if cond: return InterResnet(model, image_size, num_classes, where, aggregate)
     else: return BaseResnetV2(model, image_size , num_classes)
-
-def base_resnet152(num_classes, pretrained=True):
-    model = models.resnet152(pretrained=pretrained)
-    for n, p in model.named_parameters():
-      if p.requires_grad:
-        p.requires_grad=False
-    return BaseResnet(model, num_classes)
-
-def base_resnet101(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, aggregate="1"):
-    # model = models.resnet101(pretrained=pretrained)
-    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
-
-    if cond:
-      for n, p in model.named_parameters():
-        if p.requires_grad:
-          p.requires_grad=False
-      return InterResnetV2(model, image_size, num_classes, where, aggregate)
-    else: return BaseResnetV2(model, image_size, num_classes)
 
 def finetune_clf(model, finetune, num_classes, adj_file=None):
     if finetune=="base":

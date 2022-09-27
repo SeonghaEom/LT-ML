@@ -313,7 +313,7 @@ class Engine(object):
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         if is_best:
-            filename_best = '{}_{}_{}_{}_best.pth.tar'.format(self.state['dataset'], self.state['wandb'],self.state['model'], self.state['finetune'])
+            filename_best = '{}_{}_{}_{}_best.pth.tar'.format(self.state['dataset'], self.state['wandb'],self.state['model'], self.state['clf'])
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
             # shutil.copyfile(filename, filename_best)

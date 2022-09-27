@@ -213,7 +213,7 @@ def download_voc2007(root):
 
 
 class Voc2007Classification(data.Dataset):
-    def __init__(self, root, set, transform=None, target_transform=None, inp_name=None, adj=None, LT=False):
+    def __init__(self, root, set, transform=None, target_transform=None):
         self.root = root
         self.path_devkit = os.path.join(root, 'VOCdevkit')
         self.path_images = os.path.join(root, 'VOCdevkit', 'VOC2007', 'JPEGImages')
@@ -227,9 +227,8 @@ class Voc2007Classification(data.Dataset):
         # define path of csv file
         path_csv = os.path.join(self.root, 'files', 'VOC2007')
         # define filename of csv file
-        if LT:
-            file_csv = os.path.join(path_csv, 'classification_' + set + '_LT.csv')
-        else: file_csv = os.path.join(path_csv, 'classification_' + set + '.csv')
+
+        file_csv = os.path.join(path_csv, 'classification_' + set + '.csv')
 
         # create the csv file if necessary
         if not os.path.exists(file_csv):
@@ -243,9 +242,6 @@ class Voc2007Classification(data.Dataset):
         self.classes = object_categories
         self.images = read_object_labels_csv(file_csv)
 
-        with open(inp_name, 'rb') as f:
-            self.inp = pickle.load(f)
-        self.inp_name = inp_name
 
         print('[dataset] VOC 2007 classification set=%s number of classes=%d  number of images=%d' % (
             set, len(self.classes), len(self.images)))
@@ -258,7 +254,7 @@ class Voc2007Classification(data.Dataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return (img, path, self.inp), target
+        return (img, path), target
 
     def __len__(self):
         return len(self.images)
