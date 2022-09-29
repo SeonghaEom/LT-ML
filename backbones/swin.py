@@ -105,6 +105,7 @@ class InterSwin(nn.Module):
         act = self.sigmoid(self.l_alpha(out))
                   
         out = out * ( 1 - act) + inter * act
+        
         out_logit = self.fc(out)
         return out_logit
     def get_config_optim(self, lr, lrp):
@@ -116,7 +117,7 @@ class InterSwin(nn.Module):
                 ]
         if self.finetune:
           default += [
-            {'params': self.inter.parameters(), 'lr': lrp},
+            # {'params': self.inter.parameters(), 'lr': lrp},
             {'params': self.features[:-1].parameters(), 'lr': lrp},
           ]
         return default
