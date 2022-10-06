@@ -128,6 +128,11 @@ class InterResnetV2(nn.Module):
         # print(out.shape)
         out =out.unsqueeze(-1)
         out =out.unsqueeze(-1)
+        x_logit = self.fc(out)
+        # print(x_logit.shape)
+        # x_logit = x_logit.flatten(start_dim=1, end_dim=-1)
+        x_logit = x_logit.squeeze()
+        x_logit = x_logit.squeeze()
         return x_logit
 
     def get_config_optim(self, lr, lrp):
