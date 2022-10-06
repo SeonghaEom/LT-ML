@@ -8,11 +8,16 @@ import torch
 import pickle
 from util import *
 
-urls = {'train_img':'http://images.cocodataset.org/zips/train2014.zip',
-        'val_img' : 'http://images.cocodataset.org/zips/val2014.zip',
-        'annotations':'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'}
+# urls = {'train_img':'http://images.cocodataset.org/zips/train2014.zip',
+#         'val_img' : 'http://images.cocodataset.org/zips/val2014.zip',
+#         'annotations':'http://images.cocodataset.org/annotations/annotations_trainval2014.zip'}
 
-def download_coco2014(root, phase):
+urls = {'train_img':'http://images.cocodataset.org/zips/train2017.zip',
+        'val_img' : 'http://images.cocodataset.org/zips/val2017.zip',
+        'test_img' : 'http://images.cocodataset.org/zips/test2017.zip',
+        'annotations':'http://images.cocodataset.org/annotations/annotations_trainval2017.zip'}
+
+def download_coco2017(root, phase):
     if not os.path.exists(root):
         os.makedirs(root)
     tmpdir = os.path.join(root, 'tmp/')
@@ -22,9 +27,9 @@ def download_coco2014(root, phase):
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
     if phase == 'train':
-        filename = 'train2014.zip'
+        filename = 'train2017.zip'
     elif phase == 'val':
-        filename = 'val2014.zip'
+        filename = 'val2017.zip'
     cached_file = os.path.join(tmpdir, filename)
     if not os.path.exists(cached_file):
         print('Downloading: "{}" to {}\n'.format(urls[phase + '_img'], cached_file))
@@ -40,7 +45,7 @@ def download_coco2014(root, phase):
     print('[dataset] Done!')
 
     # train/val images/annotations
-    cached_file = os.path.join(tmpdir, 'annotations_trainval2014.zip')
+    cached_file = os.path.join(tmpdir, 'annotations_trainval2017.zip')
     if not os.path.exists(cached_file):
         print('Downloading: "{}" to {}\n'.format(urls['annotations'], cached_file))
         os.chdir(tmpdir)
@@ -57,7 +62,7 @@ def download_coco2014(root, phase):
     img_id = {}
     annotations_id = {}
     if not os.path.exists(anno):
-        annotations_file = json.load(open(os.path.join(annotations_data, 'instances_{}2014.json'.format(phase))))
+        annotations_file = json.load(open(os.path.join(annotations_data, 'instances_{}2017.json'.format(phase))))
         annotations = annotations_file['annotations']
         category = annotations_file['categories']
         category_id = {}
@@ -98,23 +103,15 @@ def categoty_to_idx(category):
     return cat2idx
 
 
-class COCO2014(data.Dataset):
-    def __init__(self, root, transform=None, phase='train', label_count=None):
+class COCO2017(data.Dataset):
+    def __init__(self, root, transform=None, phase='train'):
         self.root = root
         self.phase = phase
         self.img_list = []
         self.transform = transform
-        download_coco2014(root, phase)
-        self.lab_cnt = label_count
+        download_coco2017(root, phase)
         self.get_anno()
         self.num_classes = len(self.cat2idx)
-        
-        # if inp_name:
-        #   with open(inp_name, 'rb') as f:
-        #       self.inp = pickle.load(f)
-        # else:
-        #   self.inp = None
-        # self.inp_name = inp_name
 
     def get_anno(self):
         if self.lab_cnt:
@@ -133,7 +130,7 @@ class COCO2014(data.Dataset):
     def get(self, item):
         filename = item['file_name']
         labels = sorted(item['labels'])
-        img = Image.open(os.path.join(self.root, 'data', '{}2014'.format(self.phase), filename)).convert('RGB')
+        img = Image.open(os.path.join(self.root, 'data', '{}2017'.format(self.phase), filename)).convert('RGB')
         if self.transform is not None:
             img = self.transform(img)
         target = np.zeros(self.num_classes, np.float32) - 1
