@@ -7,6 +7,8 @@ import numpy as np
 import torch
 import pickle
 from util import *
+from pathlib import Path
+
 
 # urls = {'train_img':'http://images.cocodataset.org/zips/train2014.zip',
 #         'val_img' : 'http://images.cocodataset.org/zips/val2014.zip',
@@ -30,11 +32,15 @@ def download_coco2017(root, phase):
         filename = 'train2017.zip'
     elif phase == 'val':
         filename = 'val2017.zip'
+    elif phase == 'test':
+        filename = 'test2017.zip'
     cached_file = os.path.join(tmpdir, filename)
     if not os.path.exists(cached_file):
         print('Downloading: "{}" to {}\n'.format(urls[phase + '_img'], cached_file))
+        Path(tmpdir).mkdir(parents=True, exist_ok=True)
         os.chdir(tmpdir)
         subprocess.call('wget ' + urls[phase + '_img'], shell=True)
+        Path(root).mkdir(parents=True, exist_ok=True)
         os.chdir(root)
     # extract file
     img_data = os.path.join(data, filename.split('.')[0])
@@ -48,8 +54,10 @@ def download_coco2017(root, phase):
     cached_file = os.path.join(tmpdir, 'annotations_trainval2017.zip')
     if not os.path.exists(cached_file):
         print('Downloading: "{}" to {}\n'.format(urls['annotations'], cached_file))
+        Path(tmpdir).mkdir(parents=True, exist_ok=True)
         os.chdir(tmpdir)
         subprocess.Popen('wget ' + urls['annotations'], shell=True)
+        Path(root).mkdir(parents=True, exist_ok=True)
         os.chdir(root)
     annotations_data = os.path.join(data, 'annotations')
     if not os.path.exists(annotations_data):
@@ -114,9 +122,8 @@ class COCO2017(data.Dataset):
         self.num_classes = len(self.cat2idx)
 
     def get_anno(self):
-        if self.lab_cnt:
-            list_path = os.path.join(self.root, 'data', 'coco{}_anno_{}.json'.format(self.phase, self.lab_cnt))
-        else: list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
+
+        list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
         self.img_list = json.load(open(list_path, 'r'))
         self.cat2idx = json.load(open(os.path.join(self.root, 'data', 'category.json'), 'r'))
 
