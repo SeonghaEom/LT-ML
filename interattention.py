@@ -19,26 +19,24 @@ from torch import nn, einsum
 from einops import rearrange, repeat
 
 
-class inter_attention():
-  def __init__(self, ):
+class inter_attention(nn.Module):
+  def __init__(self, q_dim, kv_dim, inner_dim):
     super(inter_attention, self).__init__()
 
-    dim = 196
-    inner_dim = 196//1
     group_queries = True
     group_key_values = True
-    offset_groups = 4
+    offset_groups = 1
     self.heads=1
-    self.to_q = nn.Conv1d(dim, inner_dim, 1, groups = offset_groups if group_queries else 1, bias = False)
-    self.to_k = nn.Conv1d(dim, inner_dim, 1, groups = offset_groups if group_key_values else 1, bias = False)
-    self.to_v = nn.Conv1d(dim, inner_dim, 1, groups = offset_groups if group_key_values else 1, bias = False)
-    self.to_out = nn.Conv1d(inner_dim, dim, 1)
+    self.to_q = nn.Conv1d(q_dim, inner_dim, 1, groups = offset_groups if group_queries else 1, bias = False)
+    self.to_k = nn.Conv1d(kv_dim, inner_dim, 1, groups = offset_groups if group_key_values else 1, bias = False)
+    self.to_v = nn.Conv1d(kv_dim, inner_dim, 1, groups = offset_groups if group_key_values else 1, bias = False)
+    self.to_out = nn.Conv1d(inner_dim, q_dim, 1)
 
-  def get_attention( self, out, int_li, i=0):
-  
-    k, v = self.to_k(int_li[i]), self.to_v(int_li[i])
+
+  def get_attention( self, query, kv):
+    k, v = self.to_k(kv), self.to_v(kv)
     # k.shape, v.shape #(torch.Size([1, 196, 768]), torch.Size([1, 196, 768]))
-    q = self.to_q(out)
+    q = self.to_q(query)
     # q.shape #torch.Size([1, 196, 768])
 
     # split out heads
@@ -54,12 +52,10 @@ class inter_attention():
     dropout = nn.Dropout(0.0)
     attn = sim.softmax(dim = -1)
     attn = dropout(attn)
-    attn.shape
 
     # aggregate and combine heads
-
     out = einsum('b h i j, b h j d -> b h i d', attn, v)
     out = rearrange(out, 'b h n d -> b (h d) n')
     out = self.to_out(out)
-    print(out.shape)
+    # print(out.shape)
     return out

@@ -501,7 +501,7 @@ def base_convnext(model_path, num_classes, image_size, pretrained=True, cond=Tru
         # print(p.requires_grad)
     if cond: return InterConvNext(model, num_classes, where)
     else: return BaseConvNext(model, num_classes)
-def base_swin(model_path, num_classes, image_size, pretrained=True,cond=True, where=0, aggregate='1', finetune=False):
+def base_swin(model_path, num_classes, image_size, pretrained=True,cond=True, finetune=False):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
 
     if not finetune:
@@ -509,16 +509,17 @@ def base_swin(model_path, num_classes, image_size, pretrained=True,cond=True, wh
         if p.requires_grad:
           p.requires_grad=False
           # print(p.requires_grad)
-      return InterSwin(model, image_size, num_classes, where, finetune)
-    else: return BaseSwin(model, image_size, num_classes)
-def base_vit(model_path, num_classes, image_size, pretrained=True, cond=True, where=0):
-    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
-    for n, p in model.named_parameters():
-      if p.requires_grad:
-        p.requires_grad=False
-        # print(p.requires_grad)
     if cond:
-      return InterViT(model, num_classes, where=where)
+      return InterSwin(model, image_size, num_classes, finetune)
+    else: return BaseSwin(model, image_size, num_classes)
+def base_vit(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, finetune=False):
+    model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
+    if not finetune:
+      for n, p in model.named_parameters():
+        if p.requires_grad:
+          p.requires_grad=False
+    if cond:
+      return InterViT(model, num_classes)
     else: return BaseViT(model, num_classes)
 
 def base_resnet(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, finetune=False):

@@ -120,11 +120,11 @@ class Engine(object):
         # self.state['loss'] = criterion(self.state['output'], target_var)
             with torch.no_grad():
                 # compute output
-                self.state['output'] = model(input_var, i%12)
+                self.state['output'] = model(input_var)
                 self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
-            self.state['output'] = model(input_var, i%12)
+            self.state['output'] = model(input_var)
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
             self.state['loss'].backward()
@@ -312,7 +312,7 @@ class Engine(object):
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         if is_best:
-            filename_best = '{}_{}_{}_{}_best.pth.tar'.format(self.state['dataset'], self.state['wandb'],self.state['model'], self.state['clf'])
+            filename_best = '{}_{}_best.pth.tar'.format(self.state['model'],self.state['wandb'],)
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
             # shutil.copyfile(filename, filename_best)
@@ -426,11 +426,11 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         if not training:
             with torch.no_grad():
                 # compute output
-                self.state['output'] = model(feature_var, i%12)
+                self.state['output'] = model(feature_var)
                 self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
-            self.state['output'] = model(feature_var, i%12)
+            self.state['output'] = model(feature_var)
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
             self.state['loss'].backward()

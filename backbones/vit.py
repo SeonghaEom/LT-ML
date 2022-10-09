@@ -50,7 +50,7 @@ class BaseViT(nn.Module):
                 ]
 
 class InterViT(nn.Module):
-    def __init__(self, model, num_classes, where=0):
+    def __init__(self, model, num_classes):
         super(InterViT, self).__init__()
 
         # self.features = nn.Sequential(
@@ -65,14 +65,18 @@ class InterViT(nn.Module):
         self.pre = torch.nn.Sequential(*[model.patch_embed,
         model.pos_drop])
 
-        print(len(model.blocks))
+        # print(len(model.blocks))
         self.blocks = model.blocks
         self.post = torch.nn.Sequential(*[model.norm,
         model.fc_norm,
         model.head])
+
+        self.ln1 =  nn.LayerNorm(model.head.in_features)
+        self.shortcut = nn.Identity()
+        # self.i = nn.Identity()
         # self.fc = ClassificationHead(model.head.in_features, num_classes)
-        print(model.head)
-        self.fc = nn.Linear(model.head.in_features, num_classes)
+        # print(model.head)
+        # self.fc = nn.Linear(model.head.in_features, num_classes)
         # image normalization
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
@@ -85,6 +89,7 @@ class InterViT(nn.Module):
         # self.scale = nn.Parameter(torch.cuda.FloatTensor([0.01]))
 
     def forward(self, feature, i):
+        # print(i)
         # x = self.features(feature)
 
         # inter_repr = self.inter(feature)
@@ -94,22 +99,28 @@ class InterViT(nn.Module):
         # x = x*(1-self.scale) + self.scale * inter_repr
         # out_logit = self.fc(x)
         inp = self.pre(feature)
-        print(inp.shape)
+        # print(inp.shape)
 
         int_li = []
         for b in self.blocks:
           inp = b(inp)
-          print(inp.shape)
+          # print(inp.shape)
           int_li.append(inp)
 
-        inp = self.post(inp)
-        print(inp.shape)
-        out = self.attention.get_attention(inp, int_li, i)
+
+        inp = self.ln1(inp)
+        residual = self.shortcut(inp)
+        # print(inp.shape)
+        out = self.attention.get_attention(inp, int_li, i) + residual
+        out = self.post(out)
         out = out.mean(dim=1)
         return out
 
     def get_config_optim(self, lr, lrp):
         return [
+                {'params': self.blocks.parameters(), 'lr': lr},
                 {'params': self.post.parameters(), 'lr': lr},
+                {'params': self.attention.parameters(), 'lr': lr},
+                {'params': self.ln1.parameters(), 'lr': lr},
                 ]
 
