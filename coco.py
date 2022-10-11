@@ -114,7 +114,7 @@ def categoty_to_idx(category):
 
 
 class COCO2017(data.Dataset):
-    def __init__(self, root, transform=None, phase='train'):
+    def __init__(self, root, transform=None, phase='train', mixup=False):
         self.root = root
         self.phase = phase
         self.img_list = []
@@ -122,6 +122,7 @@ class COCO2017(data.Dataset):
         download_coco2017(root, phase)
         self.get_anno()
         self.num_classes = len(self.cat2idx)
+        self.mixup = mixup
 
     def get_anno(self):
 
@@ -134,7 +135,10 @@ class COCO2017(data.Dataset):
 
     def __getitem__(self, index):
         item = self.img_list[index]
-        return self.get(item)
+        # If data is for training, perform mixup, only perform mixup roughly on 1 for every 10 images
+        if self.phase=="train" and self.mixup and index%10==0:
+          return self.get_mixup(item)
+        else: return self.get(item)
 
     def get(self, item):
         filename = item['file_name']
@@ -144,4 +148,32 @@ class COCO2017(data.Dataset):
             img = self.transform(img)
         target = np.zeros(self.num_classes, np.float32) - 1
         target[labels] = 1
+        return (img, filename), target
+
+    def get_mixup(self, item):
+        filename = item['file_name']
+        labels = sorted(item['labels'])
+        img = Image.open(os.path.join(self.root, 'data', '{}2017'.format(self.phase), filename)).convert('RGB')
+        if self.transform is not None:
+            img = self.transform(img)
+        target = np.zeros(self.num_classes, np.float32) - 1
+        target[labels] = 1
+
+        # Choose another image/label randomly
+        mixup_idx = random.randint(0, len(self.img_list)-1)
+        mixup_item = self.img_list[mixup_idx]
+        filename = mixup_item['file_name']
+        labels = sorted(mixup_item['labels'])
+        mixup_img = Image.open(os.path.join(self.root, 'data', '{}2017'.format(self.phase), filename)).convert('RGB')
+        mixup_target = np.zeros(self.num_classes, np.float32) - 1
+        mixup_target[labels] = 1
+        if self.transform:
+            mixup_img = self.transform(mixup_img)
+
+        # Select a random number from the given beta distribution
+        # Mixup the images accordingly
+        alpha = 0.1
+        lam = np.random.beta(alpha, alpha)
+        img = lam * img + (1 - lam) * mixup_img
+        target = lam * target + (1 - lam) * mixup_target
         return (img, filename), target

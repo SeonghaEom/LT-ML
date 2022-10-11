@@ -50,13 +50,15 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
 parser.add_argument('-b', '--batch-size', default=50, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
+parser.add_argument('--opt', default='sgd', type=str,
+                     help='optimizer')
 parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                     metavar='LR', help='initial learning rate')
 parser.add_argument('--lrp', '--learning-rate-pretrained', default=0.1, type=float,
                     metavar='LR', help='learning rate for pre-trained layers')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
+parser.add_argument('--weight-decay', '--wd', default=0, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--print-freq', '-p', default=0, type=int,
                     metavar='N', help='print frequency (default: 10)')
@@ -80,6 +82,8 @@ parser.add_argument('--intermediate',action='store_true',
                     help='intermediate'),
 parser.add_argument('--finetune',action='store_true', 
                     help='finetune'),
+parser.add_argument('--mixup',action='store_true', 
+                    help='mixup'),
 
 parser.add_argument('--dataset', default='voc', type=str)
 parser.add_argument('--model', default='', type=str,
@@ -110,7 +114,7 @@ def main():
         weight = [1] * 20
         num_classes = 20
     elif args.dataset=='coco':
-        train_dataset = COCO2017(args.data, phase='train')
+        train_dataset = COCO2017(args.data, phase='train', mixup=args.mixup)
         val_dataset = COCO2017(args.data, phase='val' )
         if args.weight:
           weight = coco_pos_weight
@@ -156,8 +160,11 @@ def main():
         criterion = AsymmetricLossMultiLabel(gamma_pos=0,gamma_neg=4, clip=0.05)
     # define optimizer
     print(len(model.get_config_optim(args.lr, args.lrp)[args.optim_config:]))
-    # optimizer = torch.optim.SGD(model.get_config_optim(args.lr, args.lrp)[args.optim_config:],lr=args.lr,momentum=args.momentum,weight_decay=args.weight_decay)
-    optimizer = torch.optim.Adam(params=model.get_config_optim(args.lr, args.lrp)[args.optim_config:], lr=args.lr, weight_decay=0.0)
+    if args.opt == 'sgd':
+      optimizer = torch.optim.SGD(model.get_config_optim(args.lr, args.lrp)[args.optim_config:],lr=args.lr,momentum=args.momentum,weight_decay=args.weight_decay)
+    elif args.opt == 'adam':
+      optimizer = torch.optim.Adam(params=model.get_config_optim(args.lr, args.lrp)[args.optim_config:], lr=args.lr, weight_decay=args.weight_decay)
+
     if args.lr_scheduler:
       scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_dataset), epochs=args.epochs, pct_start=0.2)
     else: scheduler = None

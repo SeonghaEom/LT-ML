@@ -55,19 +55,6 @@ class InterSwin(nn.Module):
     def __init__(self, model, image_size, num_classes, finetune=False):
         super(InterSwin, self).__init__()
         print("InterSwin")
-        # li = [
-        #     model.patch_embed,
-        #     model.pos_drop,
-        #     model.layers[0],
-        #     model.layers[1],
-        #     model.layers[2],
-        #     model.layers[3],
-        #     Reduce('b n e -> b e', reduction='mean'),
-        #     nn.LayerNorm(model.head.in_features),
-        #     # model.norm,
-        # ]
-        # self.inter = nn.Sequential(*li[:where+3])
-        # self.features = nn.Sequential(*li[where+3:])
         self.pre = torch.nn.Sequential(*[model.patch_embed, model.pos_drop])
         self.layers = model.layers
         self.post = post = torch.nn.Sequential(*[
@@ -77,12 +64,12 @@ class InterSwin(nn.Module):
           nn.Linear(1024, num_classes)
           ])
 
-        self.ll1 = nn.Linear(2304, 1, bias=False)
-        self.ll2 = nn.Linear(576, 1, bias=False)
-        self.ll3 = nn.Linear(144, 1, bias=False)
-        self.ll4 = nn.Linear(144, 1, bias=False)
+        # self.ll1 = nn.Linear(2304, 1, bias=False)
+        # self.ll2 = nn.Linear(576, 1, bias=False)
+        # self.ll3 = nn.Linear(144, 1, bias=False)
+        # self.ll4 = nn.Linear(144, 1, bias=False)
 
-        self.attention = inter_attention(q_dim=144, kv_dim=3168, inner_dim=3168)
+        self.attention = inter_attention(q_dim=144, kv_dim=4, inner_dim=4, inter_dim=[256, 512, 1024, 1024])
 
         self.finetune= finetune
 
@@ -90,34 +77,6 @@ class InterSwin(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-    def get_kv(self, int_li):
-      res = None
-      softmax = nn.Softmax(dim=1)
-      val, ind = softmax(self.ll1(int_li[0].mT)).sort(dim=1, descending=True)
-      top4 = ind[:,0:4,].flatten()
-      # print(top4)
-      # print(int_li[0][:,:,top4].shape)
-      res = int_li[0][:,:,top4]
-
-      val, ind = softmax(self.ll2(int_li[1].mT)).sort(dim=1, descending=True)
-      top4 = ind[:,0:4,].flatten()
-      # print(top4)
-      # print(int_li[1][:,:,top4].shape)
-      res = torch.cat((res, int_li[1][:,:,top4]), dim=1)
-
-      val, ind = softmax(self.ll3(int_li[2].mT)).sort(dim=1, descending=True)
-      top4 = ind[:,0:4,].flatten()
-      # print(top4)
-      # print(int_li[2][:,:,top4].shape)
-      res = torch.cat((res, int_li[2][:,:,top4]), dim=1)
-
-      val, ind = softmax(self.ll4(int_li[3].mT)).sort(dim=1, descending=True)
-      top4 = ind[:,0:4,].flatten()
-      # print(top4)
-      # print(int_li[3][:,:,top4].shape)
-      res = torch.cat((res, int_li[3][:,:,top4]), dim=1)
-
-      return res
 
     def forward(self, inp):
         inp = self.pre(inp)
@@ -127,8 +86,8 @@ class InterSwin(nn.Module):
           inp = b(inp)
           int_li.append(inp)
 
-        
-        kv = self.get_kv(int_li)
+
+        kv = self.attention.get_kv(int_li)
         out = self.attention.get_attention(query=int_li[-1], kv=kv)
         out = self.post(out)
         out_logit = out.mean(dim=1)
@@ -136,10 +95,6 @@ class InterSwin(nn.Module):
         return out_logit
     def get_config_optim(self, lr, lrp):
         op = [
-                {'params': self.ll1.parameters(), 'lr': lr},
-                {'params': self.ll2.parameters(), 'lr': lr},
-                {'params': self.ll3.parameters(), 'lr': lr},
-                {'params': self.ll4.parameters(), 'lr': lr},
                 {'params': self.attention.parameters(), 'lr': lr},
                 {'params': self.post.parameters(), 'lr': lr},
                 # {'params': self.scale, 'lr': lr},
