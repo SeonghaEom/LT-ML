@@ -4,7 +4,7 @@ from torchvision.ops import SqueezeExcitation
 from torch.nn import Parameter
 from util import *
 from util import _gen_A
-from interattention import inter_attention
+from interattention import InterAttention
 import torch
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATv2Conv, TransformerConv, GATConv
@@ -52,7 +52,7 @@ class BaseSwin(nn.Module):
                 
                 ]
 class InterSwin(nn.Module):
-    def __init__(self, model, image_size, num_classes, finetune=False):
+    def __init__(self, model, num_classes, inner_dim=1024, feature_dim=512, finetune=False):
         super(InterSwin, self).__init__()
         print("InterSwin")
         self.pre = torch.nn.Sequential(*[model.patch_embed, model.pos_drop])
@@ -69,7 +69,7 @@ class InterSwin(nn.Module):
         # self.ll3 = nn.Linear(144, 1, bias=False)
         # self.ll4 = nn.Linear(144, 1, bias=False)
 
-        self.attention = inter_attention(q_dim=144, kv_dim=4, inner_dim=4, inter_dim=[256, 512, 1024, 1024])
+        self.attention = InterAttention(q_dim=144, kv_dim=(256+512+1024+1024), inner_dim=inner_dim, inter_dim=[256, 512, 1024, 1024], feature_dim=feature_dim)
 
         self.finetune= finetune
 
@@ -87,7 +87,7 @@ class InterSwin(nn.Module):
           int_li.append(inp)
 
 
-        kv = self.attention.get_kv(int_li)
+        kv = self.attention.get_kv(int_li, tau=0.5)
         out = self.attention.get_attention(query=int_li[-1], kv=kv)
         out = self.post(out)
         out_logit = out.mean(dim=1)

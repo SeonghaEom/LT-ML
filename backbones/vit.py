@@ -4,7 +4,7 @@ from torchvision.ops import SqueezeExcitation
 from torch.nn import Parameter
 from util import *
 from util import _gen_A
-from interattention import inter_attention
+from interattention import InterAttention
 import torch
 import torch.nn as nn
 from torch_geometric.nn import SAGEConv, GATv2Conv, TransformerConv, GATConv
@@ -81,7 +81,7 @@ class InterViT(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
-        self.attention = inter_attention()
+        self.attention = InterAttention()
 
         # self.avg = nn.AvgPool1d(196, stride=1)
         # li = [model.patch_embed, model.pos_drop, model.blocks[0], model.blocks[1],  model.blocks[2], model.blocks[3]][:where+3]

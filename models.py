@@ -501,7 +501,7 @@ def base_convnext(model_path, num_classes, image_size, pretrained=True, cond=Tru
         # print(p.requires_grad)
     if cond: return InterConvNext(model, num_classes, where)
     else: return BaseConvNext(model, num_classes)
-def base_swin(model_path, num_classes, image_size, pretrained=True, cond=True, finetune=False):
+def base_swin(model_path, num_classes, image_size, pretrained=True, cond=True, inner_dim=1024, feature_dim=512, finetune=False):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)
 
     if not finetune:
@@ -510,7 +510,7 @@ def base_swin(model_path, num_classes, image_size, pretrained=True, cond=True, f
           p.requires_grad=False
           # print(p.requires_grad)
     if cond:
-      return InterSwin(model, image_size, num_classes, finetune)
+      return InterSwin(model, num_classes, inner_dim, feature_dim, finetune)
     else: return BaseSwin(model, image_size, num_classes)
 def base_vit(model_path, num_classes, image_size, pretrained=True, cond=True, where=0, finetune=False):
     model = timm.create_model(model_path, num_classes=num_classes, pretrained=pretrained)

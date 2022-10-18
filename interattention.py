@@ -1,27 +1,16 @@
 import torch
-import numpy as np
 import torch.nn as nn
 from voc import *
 from coco import *
-import torchvision.transforms as transforms
-from tqdm import tqdm
-import json
-import pandas as pd
-import matplotlib.pyplot as plt
 from config import seed_everything
 seed_everything(0)
-import timm
-
-# from models import *
-from backbones.config import config
-import pathlib
 from torch import nn, einsum
 from einops import rearrange, repeat
 
 
-class inter_attention(nn.Module):
-  def __init__(self, q_dim, kv_dim, inner_dim, inter_dim):
-    super(inter_attention, self).__init__()
+class InterAttention(nn.Module):
+  def __init__(self, q_dim, kv_dim, inner_dim, inter_dim, feature_dim=512):
+    super(InterAttention, self).__init__()
 
     group_queries = True
     group_key_values = True
@@ -32,36 +21,46 @@ class inter_attention(nn.Module):
     self.to_v = nn.Conv1d(kv_dim, inner_dim, 1, groups = offset_groups if group_key_values else 1, bias = False)
     self.to_out = nn.Conv1d(inner_dim, q_dim, 1)
     self.ll = nn.ModuleList([
-      nn.Linear(inter_dim[0], 1, bias=False),
-      nn.Linear(inter_dim[1], 1, bias=False),
-      nn.Linear(inter_dim[2], 1, bias=False),
-      nn.Linear(inter_dim[3], 1, bias=False),
+      nn.Linear(inter_dim[0], feature_dim, bias=False),
+      nn.Linear(inter_dim[1], feature_dim, bias=False),
+      nn.Linear(inter_dim[2], feature_dim, bias=False),
+      nn.Linear(inter_dim[3], feature_dim, bias=False),
     ])
-  def get_kv(self, int_li):
-    res = None
-    softmax = nn.Softmax(dim=1)
-    val, ind = softmax(self.ll[0](int_li[0])).sort(dim=1, descending=True)
-    # print(ind.shape)
-    top4 = ind[:,0:4,:]
-    top4 = top4.repeat(1, 1, self.ll[0].in_features)
-    # print(top4.shape)
-    res = int_li[0].gather(1, top4)
+  def get_kv(self, int_li, tau=1):
+    softmax = nn.functional.gumbel_softmax
+    T = rearrange(int_li[0], 'b N D -> b D N')
+    # print(T.shape)
+    val= softmax(self.ll[0](int_li[0]), dim=1, tau=tau)
+    # print(val.shape)
+    res = torch.matmul(T, val)
+    # res = rearrange(res, 'b D N -> b N D')
+    # print(res.shape)
 
-    val, ind = softmax(self.ll[1](int_li[1])).sort(dim=1, descending=True)
-    top4 = ind[:,0:4,]
-    top4 = top4.repeat(1, 1, self.ll[1].in_features)
-    # print(int_li[1][:,top4, :].shape)
-    res = torch.cat((res, int_li[1].gather(1, top4)), dim=2)
+    T = rearrange(int_li[1], 'b N D -> b D N')
+    # print(T.shape)
+    val= softmax(self.ll[1](int_li[1]), dim=1, tau=tau)
+    # print(val.shape)
+    test = torch.matmul(T, val)
+    # test = rearrange(test, 'b D N -> b N D')
+    res = torch.concat((res, test), dim=1)
+    # print(res.shape)
 
-    val, ind = softmax(self.ll[2](int_li[2])).sort(dim=1, descending=True)
-    top4 = ind[:,0:4,]
-    top4 = top4.repeat(1, 1, self.ll[2].in_features)
-    res = torch.cat((res, int_li[2].gather(1, top4)), dim=2)
+    T = rearrange(int_li[2], 'b N D -> b D N')
+    # print(T.shape)
+    val= softmax(self.ll[2](int_li[2]), dim=1, tau=tau)
+    # print(val.shape)
+    test = torch.matmul(T, val)
+    # test = rearrange(test, 'b D N -> b N D')
+    res = torch.concat((res, test), dim=1)
+    # print(res.shape)
 
-    val, ind = softmax(self.ll[3](int_li[3])).sort(dim=1, descending=True)
-    top4 = ind[:,0:4,]
-    top4 = top4.repeat(1, 1, self.ll[3].in_features)
-    res = torch.cat((res, int_li[3].gather(1, top4)), dim=2)
+    T = rearrange(int_li[3], 'b N D -> b D N')
+    # print(T.shape)
+    val= softmax(self.ll[3](int_li[2]), dim=1, tau=tau)
+    # print(val.shape)
+    test = torch.matmul(T, val)
+    # test = rearrange(test, 'b D N -> b N D')
+    res = torch.concat((res, test), dim=1)
     # print(res.shape)
 
     return res

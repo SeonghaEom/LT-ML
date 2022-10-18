@@ -52,9 +52,9 @@ parser.add_argument('-b', '--batch-size', default=50, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--opt', default='sgd', type=str,
                      help='optimizer')
-parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
+parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
                     metavar='LR', help='initial learning rate')
-parser.add_argument('--lrp', '--learning-rate-pretrained', default=0.1, type=float,
+parser.add_argument('--lrp', '--learning-rate-pretrained', default=1e-5, type=float,
                     metavar='LR', help='learning rate for pre-trained layers')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
@@ -95,8 +95,12 @@ parser.add_argument('--aggr_type', default='1', type=str,
                     help="1, 10")
 
 parser.add_argument('--optim_config', default=0, type=int)
-parser.add_argument('--label_count', default=0, type=int,
-                    help='only get data that contains this number of labels')
+parser.add_argument('--inner_dim', default=1024, type=int,
+                    help='inner dimension for attention')
+parser.add_argument('--feature_dim', default=512, type=int,
+                    help='consistent feature dimension for intermediate representation concatenation')
+parser.add_argument('--gamma', default=2, type=float,
+                    help='gamma in Asymmetric Loss')
 
 def main():
     global args, best_prec1, use_gpu
@@ -123,7 +127,7 @@ def main():
 
     resume = True if len(args.resume) else False
     if len(args.wandb) :
-        wandb.init(project="ML-{}-{}-{}-{}".format(args.name, args.dataset, args.label_count, args.model), name="{}-{}".format(args.wandb, args.seed), entity='seonghaeom')
+        wandb.init(project="ML-{}-{}-{}".format(args.name, args.dataset, args.model), name="{}-{}".format(args.wandb, args.seed), entity='seonghaeom')
 
 
 
@@ -136,7 +140,7 @@ def main():
     elif args.model == 'vit':
         model = base_vit(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, finetune=args.finetune)
     elif args.model == 'swin':
-        model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, finetune=args.finetune)
+        model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, inner_dim=args.inner_dim, feature_dim=args.feature_dim, finetune=args.finetune)
     elif args.model == 'swin_large':
         model = base_swin(model_path = m_path, num_classes=num_classes, image_size=args.image_size, pretrained=True, cond=args.intermediate, where=args.where, aggregate=args.aggr_type)
     elif args.model == 'convnext':
@@ -157,16 +161,18 @@ def main():
         criterion = nn.MSELoss()
     elif args.loss == 'asymmetric':
         from timm.loss import AsymmetricLossMultiLabel
-        criterion = AsymmetricLossMultiLabel(gamma_pos=0,gamma_neg=4, clip=0.05)
+        criterion = AsymmetricLossMultiLabel(gamma_pos=0,gamma_neg=args.gamma, clip=0.05)
     # define optimizer
     print(len(model.get_config_optim(args.lr, args.lrp)[args.optim_config:]))
     if args.opt == 'sgd':
       optimizer = torch.optim.SGD(model.get_config_optim(args.lr, args.lrp)[args.optim_config:],lr=args.lr,momentum=args.momentum,weight_decay=args.weight_decay)
     elif args.opt == 'adam':
       optimizer = torch.optim.Adam(params=model.get_config_optim(args.lr, args.lrp)[args.optim_config:], lr=args.lr, weight_decay=args.weight_decay)
+    elif args.opt == 'adamw':
+      optimizer = torch.optim.AdamW(params=model.get_config_optim(args.lr, args.lrp)[args.optim_config:], lr=args.lr, weight_decay=args.weight_decay)
 
     if args.lr_scheduler:
-      scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_dataset), epochs=args.epochs, pct_start=0.2)
+      scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=100, eta_min=0)
     else: scheduler = None
 
     state = {'batch_size': args.batch_size, 'image_size': args.image_size, 'max_epochs': args.epochs,
@@ -189,13 +195,13 @@ def main():
     state['dataset'] = args.dataset
 
     normalize = transforms.Normalize(mean=model.image_normalization_mean, std=model.image_normalization_std)
-    # state['train_transform'] = transforms.Compose([
-    #                                   transforms.Resize((args.image_size, args.image_size)),
-    #                                   CutoutPIL(cutout_factor=0.5),
-    #                                   RandAugment(),
-    #                                   transforms.ToTensor(),
-    #                                   normalize,
-    #                               ])
+    state['train_transform'] = transforms.Compose([
+                                      transforms.Resize((args.image_size, args.image_size)),
+                                      CutoutPIL(cutout_factor=0.5),
+                                      RandAugment(),
+                                      transforms.ToTensor(),
+                                      normalize,
+                                  ])
     engine = GCNMultiLabelMAPEngine(state)
     best_score = engine.learning(model, criterion, train_dataset, val_dataset, optimizer, scheduler)
     if len(args.wandb):
