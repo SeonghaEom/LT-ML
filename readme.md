@@ -46,7 +46,6 @@ CUDA_VISIBLE_DEVICES=0 python3 TL.py data/coco --dataset=coco --image-size 384 -
 ## Pascal-VOC
 There are more examples in script.sh to reproduce results
 
----
 
 ```bash
 ## EXAMPLES for Table2b Pascal-VOC
