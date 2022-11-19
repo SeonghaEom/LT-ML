@@ -52,9 +52,9 @@ parser.add_argument('-b', '--batch-size', default=50, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--opt', default='sgd', type=str,
                      help='optimizer')
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                     metavar='LR', help='initial learning rate')
-parser.add_argument('--lrp', '--learning-rate-pretrained', default=1e-5, type=float,
+parser.add_argument('--lrp', '--learning-rate-pretrained', default=0.1, type=float,
                     metavar='LR', help='learning rate for pre-trained layers')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
@@ -178,7 +178,11 @@ def main():
     state = {'batch_size': args.batch_size, 'image_size': args.image_size, 'max_epochs': args.epochs,
             'evaluate': args.evaluate, 'resume': args.resume, 'num_classes':num_classes}
     state['difficult_examples'] = True
-    state['save_model_path'] = 'checkpoint/{}/'.format(args.dataset)
+
+    state['save_model_path'] = './checkpoint/{}/'.format(args.dataset)
+    if state['save_model_path'] not in os.listdir('./'):
+      Path(state['save_model_path']).mkdir(parents=True, exist_ok=True)
+
     state['workers'] = args.workers
     state['epoch_step'] = args.epoch_step
     state['lr'] = args.lr

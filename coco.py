@@ -22,6 +22,9 @@ urls = {'train_img':'http://images.cocodataset.org/zips/train2017.zip',
         'annotations':'http://images.cocodataset.org/annotations/annotations_trainval2017.zip'}
 
 def download_coco2017(root, phase):
+    # cwd = os.getcwd()
+    root = os.path.realpath(root)
+    print("root: ", root)
     if not os.path.exists(root):
         os.makedirs(root)
     tmpdir = os.path.join(root, 'tmp/')
@@ -39,11 +42,9 @@ def download_coco2017(root, phase):
     cached_file = os.path.join(tmpdir, filename)
     if not os.path.exists(cached_file):
         print('Downloading: "{}" to {}\n'.format(urls[phase + '_img'], cached_file))
-        Path(tmpdir).mkdir(parents=True, exist_ok=True)
         os.chdir(tmpdir)
         subprocess.call('wget ' + urls[phase + '_img'], shell=True)
-        Path(root).mkdir(parents=True, exist_ok=True)
-        os.chdir(root)
+        os.chdir('../')
     # extract file
     img_data = os.path.join(data, filename.split('.')[0])
     if not os.path.exists(img_data):
@@ -52,15 +53,15 @@ def download_coco2017(root, phase):
         os.system(command)
     print('[dataset] Done!')
 
+    # tmpdir = os.path.join(root, 'tmp/')
+    # print(root, tmpdir)
     # train/val images/annotations
     cached_file = os.path.join(tmpdir, 'annotations_trainval2017.zip')
     if not os.path.exists(cached_file):
         print('Downloading: "{}" to {}\n'.format(urls['annotations'], cached_file))
-        Path(tmpdir).mkdir(parents=True, exist_ok=True)
         os.chdir(tmpdir)
         subprocess.Popen('wget ' + urls['annotations'], shell=True)
-        Path(root).mkdir(parents=True, exist_ok=True)
-        os.chdir(root)
+        os.chdir('../')
     annotations_data = os.path.join(data, 'annotations')
     if not os.path.exists(annotations_data):
         print('[dataset] Extracting tar file {file} to {path}'.format(file=cached_file, path=data))
@@ -125,8 +126,8 @@ class COCO2017(data.Dataset):
         self.mixup = mixup
 
     def get_anno(self):
-
-        list_path = os.path.join(self.root, 'data', '{}_anno.json'.format(self.phase))
+        root = os.path.realpath(self.root)
+        list_path = os.path.join(root, 'data', '{}_anno.json'.format(self.phase))
         self.img_list = json.load(open(list_path, 'r'))
         self.cat2idx = json.load(open(os.path.join(self.root, 'data', 'category.json'), 'r'))
 
