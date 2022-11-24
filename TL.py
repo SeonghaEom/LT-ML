@@ -107,8 +107,8 @@ def main():
         val_dataset = Voc2007Classification(args.data, 'test')
         num_classes = 20
     elif args.dataset=='coco':
-        train_dataset = COCO2014(args.data, phase='train', label_count=args.label_count)
-        val_dataset = COCO2014(args.data, phase='val', )
+        train_dataset = COCO2017(args.data, phase='train')
+        val_dataset = COCO2017(args.data, phase='val' )
         num_classes = 80
 
     resume = True if len(args.resume) else False

@@ -28,6 +28,7 @@ def get_resnet_optim_config(model, lr, lrp):
     ]
 class BaseResnetV2(nn.Module):
     def __init__(self, model, num_classes, image_size=224):
+        print("baseresnet")
         super(BaseResnetV2, self).__init__()
         self.features = nn.Sequential(
             model.stem,
@@ -128,6 +129,8 @@ class InterResnetV2(nn.Module):
         # print(out.shape)
         out =out.unsqueeze(-1)
         out =out.unsqueeze(-1)
+
+        
         x_logit = self.fc(out)
         # print(x_logit.shape)
         # x_logit = x_logit.flatten(start_dim=1, end_dim=-1)
