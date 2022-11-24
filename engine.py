@@ -106,7 +106,7 @@ class Engine(object):
                     batch_time=batch_time, data_time_current=self.state['data_time_batch'],
                     data_time=data_time, loss_current=self.state['loss_batch'], loss=loss))
 
-    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None):
+    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None, i=0):
 
         input_var = torch.autograd.Variable(self.state['input'])
         target_var = torch.autograd.Variable(self.state['target'])
@@ -124,7 +124,6 @@ class Engine(object):
                 self.state['loss'] = criterion(self.state['output'], target_var)
 
         if training:
-            print(model.A)
             self.state['output'] = model(input_var)
             self.state['loss'] = criterion(self.state['output'], target_var)
             optimizer.zero_grad()
@@ -262,7 +261,7 @@ class Engine(object):
             if self.state['use_gpu']:
                 self.state['target'] = self.state['target'].cuda(non_blocking=True)
 
-            self.on_forward(True, model, criterion, data_loader, optimizer, True, scheduler)
+            self.on_forward(True, model, criterion, data_loader, optimizer, True, scheduler, i)
 
             # measure elapsed time
             self.state['batch_time_current'] = time.time() - end
@@ -313,7 +312,7 @@ class Engine(object):
 
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
         if is_best:
-            filename_best = '{}_{}_{}_{}_best.pth.tar'.format(self.state['dataset'], self.state['wandb'],self.state['model'], self.state['clf'])
+            filename_best = '{}_{}_best.pth.tar'.format(self.state['model'],self.state['wandb'],)
             if self._state('save_model_path') is not None:
                 filename_best = os.path.join(self.state['save_model_path'], filename_best)
             # shutil.copyfile(filename, filename_best)
@@ -420,7 +419,7 @@ class MultiLabelMAPEngine(Engine):
 
 
 class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
-    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None):
+    def on_forward(self, training, model, criterion, data_loader, optimizer=None, display=True, scheduler=None, i=0):
         feature_var = torch.autograd.Variable(self.state['feature']).float()
         target_var = torch.autograd.Variable(self.state['target']).float()
         # inp_var = torch.autograd.Variable(self.state['input']).float().detach()  # one hot

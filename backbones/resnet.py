@@ -65,11 +65,10 @@ class BaseResnetV2(nn.Module):
 class InterResnetV2(nn.Module):
     def __init__(self, model, image_size=224, num_classes=80, where =0, finetune=False):
         super(InterResnetV2, self).__init__()
-        li = [model.stem, model.stages[0], model.stages[1], model.stages[2], model.stages[3], 
-        model.norm, 
-        model.head.global_pool]
-        self.intermediate = nn.Sequential(*li[:where+2])
-        self.features = nn.Sequential(*li[where+2:])
+        self.pre = nn.Sequential(*[model.stem])
+        self.blocks =  nn.Sequential(*[model.stages[0], model.stages[1], model.stages[2], model.stages[3]])
+        self.post = nn.Sequential(*[model.norm, model.head.global_pool])
+
         model.head.fc.out_features = num_classes
         for p in model.head.fc.parameters():
           if p.requires_grad == False:
@@ -111,15 +110,15 @@ class InterResnetV2(nn.Module):
         del(inp)
         del(out)
 
-    def forward(self, feature):
-        intermediate_repr = self.intermediate(feature)
-        # intermediate_cp = copy.deepcopy(intermediate_repr)
-        out = self.features(intermediate_repr)
+    def forward(self, feature, where):
+        inter = self.pre(inter)
+        inter = self.blocks[:where+1]
 
+        out  = self.post(self.blocks[where+1:])
 
-        b,n, _,_ = intermediate_repr.shape
+        b,n, _,_ = inter.shape
 
-        inter_out = self.excitation(self.squeeze(intermediate_repr))
+        inter_out = self.excitation(self.squeeze(inter))
         out = out.squeeze()
         out = out.squeeze()
 
